@@ -20,12 +20,10 @@ import { globalSlackNotifier } from './src/notifications/slackNotifier';
 import { globalDiscordNotifier } from './src/notifications/discordNotifier';
 import { globalSecurityManager } from './src/security/securityManager';
 
-const currentFileUrl = typeof import.meta !== 'undefined' && import.meta.url ? import.meta.url : null;
-const scriptPath = currentFileUrl ? fileURLToPath(currentFileUrl) : process.cwd();
-const currentDir = path.dirname(scriptPath);
+const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
 
