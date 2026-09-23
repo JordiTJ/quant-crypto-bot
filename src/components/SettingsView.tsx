@@ -334,6 +334,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   };
 
+  const [isResettingPaper, setIsResettingPaper] = useState(false);
+  const [resetPaperResult, setResetPaperResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Handle Reset Paper Trading State
+  const handleResetPaper = async () => {
+    if (!window.confirm('Weet je zeker dat je het Paper Trading account wilt resetten naar een schone lei? Alle open posities en trade geschiedenis worden leeggemaakt en het saldo wordt hersteld naar $10,000.00.')) {
+      return;
+    }
+    setIsResettingPaper(true);
+    setResetPaperResult(null);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (sessionToken) headers['x-admin-token'] = sessionToken;
+
+      const res = await fetch('/api/paper/reset', {
+        method: 'POST',
+        headers
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResetPaperResult({ success: true, message: data.message || 'Paper trading succesvol gereset!' });
+        if (onRefreshGlobal) onRefreshGlobal();
+        fetchData();
+      } else {
+        setResetPaperResult({ success: false, message: data.error || 'Resetten mislukt' });
+      }
+    } catch (err: any) {
+      setResetPaperResult({ success: false, message: err.message || 'Verbindingsfout' });
+    } finally {
+      setIsResettingPaper(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -897,6 +930,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <strong>Herstelgarantie:</strong> Als je de bot laat draaien op Oracle Cloud, Ubuntu VPS of Docker en de machine herstart voor een beveiligingsupdate of stroomonderbreking, leest de achtergrond-daemon direct alle posities, stop losses, Discord- en Slack-instellingen weer in vanaf de schijf.
           </span>
         </div>
+
+        {/* Paper Trading Clean Slate Reset Action */}
+        <div className="pt-3 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="text-xs font-semibold text-slate-200 block">Paper Trading Schone Lei Reset</span>
+            <p className="text-[11px] text-slate-400">
+              Zet open posities en eerdere proeftrades op 0 en herstel het startsaldo exact naar $10,000.00 cash USDT.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleResetPaper}
+            disabled={isResettingPaper}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-medium transition disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isResettingPaper ? 'animate-spin' : ''}`} />
+            {isResettingPaper ? 'Resetten...' : 'Reset naar $10.000 (Schone Start)'}
+          </button>
+        </div>
+
+        {resetPaperResult && (
+          <div className={`p-2.5 rounded-lg text-xs flex items-center gap-2 border ${
+            resetPaperResult.success
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+          }`}>
+            {resetPaperResult.success ? <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />}
+            <span>{resetPaperResult.message}</span>
+          </div>
+        )}
       </div>
 
       {/* =========================================

@@ -97,117 +97,9 @@ function addLog(level: SystemLog['level'], module: SystemLog['module'], message:
 }
 
 // Seed initial demo paper positions & trade history with current market levels
-const initialPositions: Position[] = [
-  {
-    id: 'pos_btc_1',
-    symbol: 'BTCUSDT',
-    side: 'LONG',
-    entryPrice: 85200.0,
-    currentPrice: 86134.0,
-    amount: 0.05,
-    valueUsd: 4306.70,
-    stopLoss: 83800.0,
-    takeProfit1: 87500.0,
-    takeProfit2: 89900.0,
-    trailingStopActive: true,
-    trailingStopPrice: 84600.0,
-    unrealizedPnl: 46.70,
-    unrealizedPnlPercent: 1.09,
-    strategy: 'Strategy F: Multi-Factor Adaptive',
-    entryTimestamp: Date.now() - 18000000,
-    clientOrderId: 'CL_BTC_9841'
-  },
-  {
-    id: 'pos_sol_2',
-    symbol: 'SOLUSDT',
-    side: 'LONG',
-    entryPrice: 115.20,
-    currentPrice: 117.60,
-    amount: 18.0,
-    valueUsd: 2116.80,
-    stopLoss: 111.50,
-    takeProfit1: 122.80,
-    takeProfit2: 128.50,
-    trailingStopActive: false,
-    unrealizedPnl: 43.20,
-    unrealizedPnlPercent: 2.08,
-    strategy: 'Strategy B: Momentum Breakout',
-    entryTimestamp: Date.now() - 36000000,
-    clientOrderId: 'CL_SOL_3321'
-  }
-];
-
-const initialTrades: TradeRecord[] = [
-  {
-    id: 'tr_hist_1',
-    clientOrderId: 'CL_ETH_5512',
-    exchangeOrderId: 'PHX_ETH_88192',
-    symbol: 'ETHUSDT',
-    side: 'LONG',
-    strategy: 'Strategy C: Macro Pullback Support',
-    entryTimestamp: Date.now() - 86400000 * 2,
-    exitTimestamp: Date.now() - 86400000 * 1.5,
-    entryPrice: 2580.0,
-    exitPrice: 2675.0,
-    amount: 1.2,
-    grossPnl: 114.0,
-    feesPaid: 3.15,
-    slippageCost: 1.55,
-    netPnl: 109.30,
-    netPnlPercent: 3.53,
-    returnR: 1.82,
-    exitReason: 'TAKE_PROFIT_1',
-    marketRegime: 'STRONG_BULL',
-    signalScore: 84,
-    indicatorsAtEntry: { adx: 29.4, rsi: 52.8, atrPercent: 2.3, rvol: 1.65 }
-  },
-  {
-    id: 'tr_hist_2',
-    clientOrderId: 'CL_AVAX_2144',
-    exchangeOrderId: 'PHX_AVAX_19284',
-    symbol: 'AVAXUSDT',
-    side: 'LONG',
-    strategy: 'Strategy A: Trend Following',
-    entryTimestamp: Date.now() - 86400000 * 3,
-    exitTimestamp: Date.now() - 86400000 * 2.8,
-    entryPrice: 29.40,
-    exitPrice: 28.50,
-    amount: 50.0,
-    grossPnl: -45.0,
-    feesPaid: 1.74,
-    slippageCost: 0.88,
-    netPnl: -47.62,
-    netPnlPercent: -3.24,
-    returnR: -1.0,
-    exitReason: 'STOP_LOSS',
-    marketRegime: 'WEAK_BULL',
-    signalScore: 71,
-    indicatorsAtEntry: { adx: 23.1, rsi: 54.0, atrPercent: 3.1, rvol: 1.12 }
-  },
-  {
-    id: 'tr_hist_3',
-    clientOrderId: 'CL_SUI_9041',
-    exchangeOrderId: 'PHX_SUI_77182',
-    symbol: 'SUIUSDT',
-    side: 'LONG',
-    strategy: 'Strategy B: Momentum Breakout',
-    entryTimestamp: Date.now() - 86400000 * 4,
-    exitTimestamp: Date.now() - 86400000 * 3.4,
-    entryPrice: 1.58,
-    exitPrice: 1.74,
-    amount: 800.0,
-    grossPnl: 128.0,
-    feesPaid: 2.65,
-    slippageCost: 1.40,
-    netPnl: 123.95,
-    netPnlPercent: 9.81,
-    returnR: 2.35,
-    exitReason: 'TAKE_PROFIT_2',
-    marketRegime: 'HIGH_VOLATILITY',
-    signalScore: 88,
-    indicatorsAtEntry: { adx: 34.2, rsi: 62.5, atrPercent: 4.8, rvol: 2.1 }
-  }
-];
+// Clean, pristine state for live/paper trading startup
+const initialPositions: Position[] = [];
+const initialTrades: TradeRecord[] = [];
 
 globalExchangeManager.setInitialPositions(initialPositions);
 globalExchangeManager.setInitialTrades(initialTrades);
@@ -400,6 +292,21 @@ app.post('/api/positions/close', requireAuth, (req, res) => {
 
     addLog('TRADE', 'EXCHANGE', `Manual close of ${trade.symbol} position at $${trade.exitPrice}. Net P&L: $${trade.netPnl}`);
     res.json({ success: true, trade });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4b. Reset Paper Trading State (Clean Slate: $10,000 cash, 0 positions, 0 trades)
+app.post('/api/paper/reset', requireAuth, (req, res) => {
+  try {
+    globalExchangeManager.resetPaperTradingState();
+    globalRiskEngine.setEquity(10000);
+    addLog('INFO', 'ENGINE', 'Paper trading account gereset naar schone lei ($10,000.00 kapitaal, 0 openstaande posities).');
+    res.json({
+      success: true,
+      message: 'Paper trading account succesvol gereset. Klaar voor verse live/paper start!'
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

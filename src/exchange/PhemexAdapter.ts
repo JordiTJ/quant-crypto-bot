@@ -360,11 +360,10 @@ export class PhemexAdapter extends ExchangeAdapter {
   async getAccountBalance(): Promise<AccountBalance> {
     return {
       totalEquityUsd: 10000.0,
-      availableBalanceUsd: 9450.0,
-      usedMarginUsd: 550.0,
+      availableBalanceUsd: 10000.0,
+      usedMarginUsd: 0.0,
       balances: [
-        { asset: 'USDT', free: 9450.0, locked: 550.0 },
-        { asset: 'BTC', free: 0.008, locked: 0.0 }
+        { asset: 'USDT', free: 10000.0, locked: 0.0 }
       ]
     };
   }

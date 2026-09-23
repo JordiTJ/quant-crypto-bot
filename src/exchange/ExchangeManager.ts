@@ -300,15 +300,24 @@ export class ExchangeManager {
     return this.tradeHistory;
   }
 
+  resetPaperTradingState(): void {
+    this.openPositions.clear();
+    this.tradeHistory = [];
+    globalStorageManager.updateState({
+      positions: [],
+      tradeHistory: []
+    }, true);
+  }
+
   setInitialTrades(trades: TradeRecord[]): void {
-    if (this.tradeHistory.length === 0) {
+    if (this.tradeHistory.length === 0 && trades.length > 0) {
       this.tradeHistory = trades;
       globalStorageManager.updateState({ tradeHistory: this.tradeHistory }, true);
     }
   }
 
   setInitialPositions(positions: Position[]): void {
-    if (this.openPositions.size === 0) {
+    if (this.openPositions.size === 0 && positions.length > 0) {
       for (const p of positions) {
         this.openPositions.set(p.id, p);
       }
