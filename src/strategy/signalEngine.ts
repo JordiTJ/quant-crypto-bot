@@ -70,7 +70,8 @@ export class SignalEngine {
     price: number,
     ind: IndicatorSet,
     regime: MarketRegime,
-    mtf: MultiTimeframeAnalysis
+    mtf: MultiTimeframeAnalysis,
+    relativeStrengthVsBtc = 0
   ): SignalScoreBreakdown {
     let trendScore = 0;
     // EMA hierarchy: +12 if price > ema50 > ema200, +6 if price > ema50 only
@@ -96,10 +97,11 @@ export class SignalEngine {
     else if (ind.rsi14 >= 40 && ind.rsi14 < 48) momentumScore += 4; // Pullback territory
     else momentumScore += 1;
 
-    // MACD confirmation
-    if (ind.macd.histogram > 0 && ind.macd.macd > ind.macd.signal) momentumScore += 8;
-    else if (ind.macd.histogram > 0) momentumScore += 5;
-    else momentumScore += 0;
+    // Cross-Asset Relative Strength vs BTC (True orthogonal alpha factor - replaces collinear MACD)
+    if (relativeStrengthVsBtc >= 2.0) momentumScore += 8; // Strong outperformer with institutional accumulation
+    else if (relativeStrengthVsBtc >= 0.5) momentumScore += 6; // Moderate leader
+    else if (relativeStrengthVsBtc >= -1.0) momentumScore += 3; // Tracking market benchmark
+    else momentumScore += 0; // Heavy underperformer / laggard
 
     // StochRSI condition
     if (ind.stochRsi.k > ind.stochRsi.d && ind.stochRsi.k <= 75) momentumScore += 5;
@@ -183,8 +185,14 @@ export class SignalEngine {
       price: latestCandle.close
     });
 
+    const btcStats = MarketDataEngine.getMarketStats('BTCUSDT');
+    const symbolStats = MarketDataEngine.getMarketStats(symbol);
+    const btcChange = btcStats?.change24h ?? 0;
+    const symbolChange = symbolStats?.change24h ?? 0;
+    const relativeStrengthVsBtc = symbol === 'BTCUSDT' ? 0.5 : (symbolChange - btcChange);
+
     const mtf = this.evaluateMTF(symbol, effectivePrice);
-    const score = this.calculateScore(latestCandle.close, ind1h, regime, mtf);
+    const score = this.calculateScore(latestCandle.close, ind1h, regime, mtf, relativeStrengthVsBtc);
 
     let confidence: SignalConfidence = 'NO_TRADE';
     if (score.totalScore >= 80) confidence = 'STRONG';

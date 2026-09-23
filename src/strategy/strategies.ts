@@ -132,11 +132,12 @@ export class StrategyDefinitions {
 
   /**
    * Strategy D: Mean Reversion (Sideways / Range Regime ONLY)
-   * Conditions:
+   * Enhanced Quantitative Criteria:
    * 1. Regime strictly SIDEWAYS_RANGE or LOW_VOLATILITY
-   * 2. ADX < 20 (Confirm lack of directional trend)
+   * 2. ADX < 20 (Confirm complete lack of directional trend)
    * 3. Price touches or pierces lower Bollinger Band
    * 4. RSI < 35 (Oversold extreme)
+   * 5. Volume Exhaustion Check: Relative Volume <= 1.10 (CRITICAL: blocks aggressive sell-off dumps/breakdowns)
    */
   static evaluateMeanReversion(
     candle: Candle,
@@ -147,10 +148,12 @@ export class StrategyDefinitions {
     const isLowAdx = ind.adx < 20;
     const isAtLowerBand = candle.low <= ind.bollingerBands.lower * 1.005;
     const isOversoldRsi = ind.rsi14 <= 36;
+    // Volume exhaustion: Do NOT buy if relative volume is surging (> 1.10) on a lower band touch, as that signals a breakdown!
+    const isVolumeExhausted = ind.relativeVolume <= 1.10;
 
-    const triggered = isSideways && isLowAdx && isAtLowerBand && isOversoldRsi;
+    const triggered = isSideways && isLowAdx && isAtLowerBand && isOversoldRsi && isVolumeExhausted;
 
-    const stopDistance = Math.max(candle.close * 0.012, ind.atr * 1.5);
+    const stopDistance = Math.max(candle.close * 0.010, ind.atr * 1.2);
     const stopLoss = candle.close - stopDistance;
     // Mean reversion targets middle band (SMA20) and upper band
     const takeProfit1 = ind.bollingerBands.middle;
@@ -163,7 +166,7 @@ export class StrategyDefinitions {
       takeProfit1: Number(takeProfit1.toFixed(4)),
       takeProfit2: Number(takeProfit2.toFixed(4)),
       rationale: triggered
-        ? `Range mean reversion: lower Bollinger band touch with oversold RSI (${ind.rsi14.toFixed(1)}) and low ADX (${ind.adx.toFixed(1)})`
+        ? `Range mean reversion: lower Bollinger touch met oversold RSI (${ind.rsi14.toFixed(1)}), low ADX (${ind.adx.toFixed(1)}) en uitgeput verkoopvolume (RVol ${ind.relativeVolume.toFixed(2)}x)`
         : 'Mean reversion conditions not present'
     };
   }

@@ -81,7 +81,52 @@ export class BacktestEngine {
       // 1. Manage existing position (Check Stop Loss, Take Profits, Trailing Stop)
       if (activePosition) {
         timeInMarketCandles++;
+        activePosition.holdingDurationCandles = (activePosition.holdingDurationCandles || 0) + 1;
 
+        // Early Breakeven protection: lock in breakeven once price reaches +1.0R gain
+        if (currentCandle.high >= activePosition.entryPrice + activePosition.initialStopDistance * 1.0) {
+          activePosition.stopLoss = Math.max(activePosition.stopLoss, activePosition.entryPrice);
+        }
+
+        // Time-Stop: Mean Reversion positions must revert within 8 candles (8h) or exit to prevent breakdown drift
+        if (activePosition.strategy === 'MEAN_REVERSION' && activePosition.holdingDurationCandles >= 8) {
+          const exitPrice = currentCandle.close;
+          const slippage = exitPrice * (config.slippagePercent / 100);
+          const actualFill = exitPrice - slippage;
+          const fee = actualFill * activePosition.amount * (config.takerFeePercent / 100);
+          const grossPnl = (actualFill - activePosition.entryPrice) * activePosition.amount;
+          const netPnl = grossPnl - fee;
+          equity += netPnl;
+          totalFeesPaid += fee;
+          totalSlippageCost += slippage * activePosition.amount;
+          const returnR = activePosition.initialStopDistance === 0 ? 0 : netPnl / (activePosition.initialStopDistance * activePosition.initialAmount);
+
+          trades.push({
+            id: `BT_TR_${trades.length + 1}`,
+            clientOrderId: `CL_BT_${i}`,
+            exchangeOrderId: `EX_BT_${i}`,
+            symbol: config.symbol,
+            side: 'LONG',
+            strategy: activePosition.strategy,
+            entryTimestamp: activePosition.entryTimestamp,
+            exitTimestamp: currentCandle.timestamp,
+            entryPrice: activePosition.entryPrice,
+            exitPrice: actualFill,
+            amount: activePosition.amount,
+            grossPnl: Number(grossPnl.toFixed(2)),
+            feesPaid: Number(fee.toFixed(2)),
+            slippageCost: Number((slippage * activePosition.amount).toFixed(2)),
+            netPnl: Number(netPnl.toFixed(2)),
+            netPnlPercent: Number(((netPnl / (activePosition.entryPrice * activePosition.amount)) * 100).toFixed(2)),
+            returnR: Number(returnR.toFixed(2)),
+            exitReason: 'TIME_EXIT',
+            marketRegime: activePosition.regime,
+            signalScore: activePosition.signalScore,
+            indicatorsAtEntry: activePosition.indicators
+          });
+
+          activePosition = null;
+        } else {
         // A. Trailing Stop adjustment if enabled
         if (config.useTrailingStop) {
           const trailDistance = indicators.atr * config.trailingStopAtrMultiplier;
@@ -159,6 +204,7 @@ export class BacktestEngine {
           equity += netPnl;
           totalFeesPaid += fee;
           activePosition.amount -= exitQty;
+        }
         }
       }
 
