@@ -14,8 +14,9 @@ export class BacktestEngine {
    * Run full event-driven backtest
    */
   static runBacktest(config: BacktestConfig): BacktestResult {
-    const candles = MarketDataEngine.getHistoricalCandles(config.symbol, config.timeframe, 350);
-    const btcCandles = MarketDataEngine.getHistoricalCandles('BTCUSDT', config.timeframe, 350);
+    const candleCount = config.candleCount || 750;
+    const candles = MarketDataEngine.getHistoricalCandles(config.symbol, config.timeframe, candleCount);
+    const btcCandles = MarketDataEngine.getHistoricalCandles('BTCUSDT', config.timeframe, candleCount);
 
     const minCandlesRequired = 60;
     if (candles.length < minCandlesRequired) {

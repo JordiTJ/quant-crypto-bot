@@ -197,6 +197,7 @@ export interface BacktestConfig {
   atrStopMultiplier: number;
   takeProfit1Multiple: number;
   takeProfit2Multiple: number;
+  candleCount?: number;
   // Specific strategy parameters
   emaFastPeriod: number;
   emaSlowPeriod: number;

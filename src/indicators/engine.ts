@@ -517,14 +517,16 @@ export class IndicatorEngine {
     const currentAtr = atr[lastIdx];
     const currentVolSma = volumeSma20[lastIdx] || 1;
 
-    // Swing highs/lows over past 20 candles
+    // Swing highs/lows over past 20 prior candles (strictly excluding current candle to detect breakouts)
     let swingHigh = -Infinity;
     let swingLow = Infinity;
-    const lookback = Math.min(20, n);
-    for (let i = n - lookback; i < n; i++) {
+    const lookback = Math.min(20, Math.max(1, n - 1));
+    for (let i = Math.max(0, n - 1 - lookback); i < n - 1; i++) {
       if (candles[i].high > swingHigh) swingHigh = candles[i].high;
       if (candles[i].low < swingLow) swingLow = candles[i].low;
     }
+    if (swingHigh === -Infinity) swingHigh = currentClose;
+    if (swingLow === Infinity) swingLow = currentClose;
 
     const currentEma21 = ema21[lastIdx];
     const maDistancePercent = currentEma21 === 0 ? 0 : ((currentClose - currentEma21) / currentEma21) * 100;
