@@ -1,0 +1,6 @@
+{
+  "name": "QuantCrypto Trading Bot",
+  "description": "Production-grade cryptocurrency quantitative trading bot with multi-timeframe regime analysis, risk-managed backtesting, paper trading, and exchange execution adapters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
