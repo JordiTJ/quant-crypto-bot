@@ -101,17 +101,42 @@ export class PhemexAdapter extends ExchangeAdapter {
       return this.lastMarketsCache;
     }
 
-    const trackedSymbols = [
-      { symbol: 'BTCUSDT', baseAsset: 'BTC', defaultPrice: 86100, marketCapUsd: 1700000000000 },
-      { symbol: 'ETHUSDT', baseAsset: 'ETH', defaultPrice: 2750, marketCapUsd: 330000000000 },
-      { symbol: 'SOLUSDT', baseAsset: 'SOL', defaultPrice: 118, marketCapUsd: 58000000000 },
-      { symbol: 'BNBUSDT', baseAsset: 'BNB', defaultPrice: 790, marketCapUsd: 115000000000 },
-      { symbol: 'XRPUSDT', baseAsset: 'XRP', defaultPrice: 1.57, marketCapUsd: 89000000000 },
-      { symbol: 'DOGEUSDT', baseAsset: 'DOGE', defaultPrice: 0.10, marketCapUsd: 15000000000 },
-      { symbol: 'ADAUSDT', baseAsset: 'ADA', defaultPrice: 0.25, marketCapUsd: 9000000000 },
-      { symbol: 'AVAXUSDT', baseAsset: 'AVAX', defaultPrice: 11.0, marketCapUsd: 4500000000 },
-      { symbol: 'SUIUSDT', baseAsset: 'SUI', defaultPrice: 1.02, marketCapUsd: 2800000000 },
-      { symbol: 'LINKUSDT', baseAsset: 'LINK', defaultPrice: 13.0, marketCapUsd: 8000000000 }
+    const trackedSymbols: {
+      symbol: string;
+      baseAsset: string;
+      coinName: string;
+      category: 'MAJOR' | 'LAYER_1' | 'AI_DATA' | 'DEFI' | 'MEME' | 'INFRA';
+      defaultPrice: number;
+      marketCapUsd: number;
+    }[] = [
+      // Majors & Top Store of Value
+      { symbol: 'BTCUSDT', baseAsset: 'BTC', coinName: 'Bitcoin', category: 'MAJOR', defaultPrice: 86100, marketCapUsd: 1700000000000 },
+      { symbol: 'ETHUSDT', baseAsset: 'ETH', coinName: 'Ethereum', category: 'MAJOR', defaultPrice: 2750, marketCapUsd: 330000000000 },
+      { symbol: 'SOLUSDT', baseAsset: 'SOL', coinName: 'Solana', category: 'LAYER_1', defaultPrice: 118, marketCapUsd: 58000000000 },
+      { symbol: 'BNBUSDT', baseAsset: 'BNB', coinName: 'BNB Chain', category: 'MAJOR', defaultPrice: 790, marketCapUsd: 115000000000 },
+      { symbol: 'XRPUSDT', baseAsset: 'XRP', coinName: 'XRP Ledger', category: 'MAJOR', defaultPrice: 1.57, marketCapUsd: 89000000000 },
+
+      // High-Throughput Layer-1 Blockchains
+      { symbol: 'SUIUSDT', baseAsset: 'SUI', coinName: 'Sui Network', category: 'LAYER_1', defaultPrice: 1.02, marketCapUsd: 2800000000 },
+      { symbol: 'AVAXUSDT', baseAsset: 'AVAX', coinName: 'Avalanche', category: 'LAYER_1', defaultPrice: 11.0, marketCapUsd: 4500000000 },
+      { symbol: 'ADAUSDT', baseAsset: 'ADA', coinName: 'Cardano', category: 'LAYER_1', defaultPrice: 0.25, marketCapUsd: 9000000000 },
+      { symbol: 'NEARUSDT', baseAsset: 'NEAR', coinName: 'NEAR Protocol', category: 'LAYER_1', defaultPrice: 4.85, marketCapUsd: 5600000000 },
+      { symbol: 'APTUSDT', baseAsset: 'APT', coinName: 'Aptos', category: 'LAYER_1', defaultPrice: 6.20, marketCapUsd: 2700000000 },
+
+      // AI & Decentralized Data Intelligence (Top Trending Sector)
+      { symbol: 'RENDERUSDT', baseAsset: 'RENDER', coinName: 'Render Network', category: 'AI_DATA', defaultPrice: 4.15, marketCapUsd: 2100000000 },
+      { symbol: 'FETUSDT', baseAsset: 'FET', coinName: 'Artificial Superintelligence (FET)', category: 'AI_DATA', defaultPrice: 1.35, marketCapUsd: 3400000000 },
+      { symbol: 'TAOUSDT', baseAsset: 'TAO', coinName: 'Bittensor', category: 'AI_DATA', defaultPrice: 380.0, marketCapUsd: 2800000000 },
+
+      // High Liquidity DeFi & Oracles
+      { symbol: 'LINKUSDT', baseAsset: 'LINK', coinName: 'Chainlink Oracle', category: 'INFRA', defaultPrice: 13.0, marketCapUsd: 8000000000 },
+      { symbol: 'AAVEUSDT', baseAsset: 'AAVE', coinName: 'Aave Protocol', category: 'DEFI', defaultPrice: 155.0, marketCapUsd: 2300000000 },
+      { symbol: 'UNIUSDT', baseAsset: 'UNI', coinName: 'Uniswap DEX', category: 'DEFI', defaultPrice: 7.20, marketCapUsd: 4300000000 },
+
+      // High-Volume Memecoins
+      { symbol: 'DOGEUSDT', baseAsset: 'DOGE', coinName: 'Dogecoin', category: 'MEME', defaultPrice: 0.10, marketCapUsd: 15000000000 },
+      { symbol: 'PEPEUSDT', baseAsset: 'PEPE', coinName: 'Pepe', category: 'MEME', defaultPrice: 0.0000085, marketCapUsd: 3600000000 },
+      { symbol: 'SHIBUSDT', baseAsset: 'SHIB', coinName: 'Shiba Inu', category: 'MEME', defaultPrice: 0.000014, marketCapUsd: 8200000000 }
     ];
 
     try {
@@ -166,6 +191,8 @@ export class PhemexAdapter extends ExchangeAdapter {
           symbol: item.symbol,
           baseAsset: item.baseAsset,
           quoteAsset: 'USDT',
+          coinName: item.coinName,
+          category: item.category,
           price,
           change24h,
           high24h,
@@ -205,6 +232,8 @@ export class PhemexAdapter extends ExchangeAdapter {
         symbol: m.symbol,
         baseAsset: m.baseAsset,
         quoteAsset: 'USDT',
+        coinName: m.coinName,
+        category: m.category,
         price,
         change24h,
         high24h,

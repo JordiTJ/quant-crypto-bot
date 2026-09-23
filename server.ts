@@ -187,9 +187,24 @@ app.get('/api/signals', async (req, res) => {
     for (const m of markets) {
       priceMap.set(m.symbol, m.price);
       MarketDataEngine.setLivePrice(m.symbol, m.price);
+      MarketDataEngine.setMarketStats(m.symbol, {
+        price: m.price,
+        change24h: m.change24h,
+        high24h: m.high24h,
+        low24h: m.low24h,
+        volume24hUsd: m.volume24hUsd,
+        spreadPercent: m.spreadPercent,
+        volatility24h: m.volatility24h,
+        regime: m.regime
+      });
     }
 
-    const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'AVAXUSDT', 'SUIUSDT', 'LINKUSDT'];
+    const symbols = [
+      'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 
+      'SUIUSDT', 'AVAXUSDT', 'ADAUSDT', 'NEARUSDT', 'APTUSDT', 
+      'RENDERUSDT', 'FETUSDT', 'TAOUSDT', 'LINKUSDT', 'AAVEUSDT', 
+      'UNIUSDT', 'DOGEUSDT', 'PEPEUSDT', 'SHIBUSDT'
+    ];
     const signals = symbols.map(sym => SignalEngine.generateSignal(sym, priceMap.get(sym)));
     res.json({ signals });
   } catch (err: any) {
@@ -554,6 +569,16 @@ async function runAutonomousBackgroundEngine() {
     for (const m of markets) {
       priceMap.set(m.symbol, m.price);
       MarketDataEngine.setLivePrice(m.symbol, m.price);
+      MarketDataEngine.setMarketStats(m.symbol, {
+        price: m.price,
+        change24h: m.change24h,
+        high24h: m.high24h,
+        low24h: m.low24h,
+        volume24hUsd: m.volume24hUsd,
+        spreadPercent: m.spreadPercent,
+        volatility24h: m.volatility24h,
+        regime: m.regime
+      });
     }
 
     // 1. 24/7 Position Monitoring & Safety Exits (Stop Loss, Trailing Stop, TP Targets)
@@ -565,7 +590,12 @@ async function runAutonomousBackgroundEngine() {
 
     // 2. 24/7 Autonomous Auto-Trading: If Auto-Bot toggle is enabled, scan and execute qualified triggers
     if (globalExchangeManager.isAutoTradingEnabled() && !globalExchangeManager.isEmergencyKillSwitchActive()) {
-      const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'AVAXUSDT', 'SUIUSDT'];
+      const symbols = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 
+        'SUIUSDT', 'AVAXUSDT', 'ADAUSDT', 'NEARUSDT', 'APTUSDT', 
+        'RENDERUSDT', 'FETUSDT', 'TAOUSDT', 'LINKUSDT', 'AAVEUSDT', 
+        'UNIUSDT', 'DOGEUSDT', 'PEPEUSDT', 'SHIBUSDT'
+      ];
       for (const sym of symbols) {
         const livePrice = priceMap.get(sym);
         const sig = SignalEngine.generateSignal(sym, livePrice);

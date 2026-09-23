@@ -170,20 +170,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-400">Symbol:</span>
-              <div className="flex flex-wrap gap-1">
-                {['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 'AVAXUSDT', 'SUIUSDT'].map(sym => (
+              <div className="flex flex-wrap gap-1 items-center">
+                {/* Quick top pills */}
+                {['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'SUIUSDT', 'TAOUSDT', 'PEPEUSDT'].map(sym => (
                   <button
                     key={sym}
                     onClick={() => setSelectedSymbol(sym)}
                     className={`px-2 py-1 rounded text-xs font-mono font-medium transition ${
                       selectedSymbol === sym
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                     }`}
                   >
                     {sym.replace('USDT', '')}
                   </button>
                 ))}
+
+                {/* Dropdown for the rest of the 19 coins */}
+                <select
+                  value={selectedSymbol}
+                  onChange={(e) => setSelectedSymbol(e.target.value)}
+                  className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="" disabled>Alle 19 Coins...</option>
+                  {(markets && markets.length > 0 ? markets : [
+                    { symbol: 'BTCUSDT', coinName: 'Bitcoin' },
+                    { symbol: 'ETHUSDT', coinName: 'Ethereum' },
+                    { symbol: 'SOLUSDT', coinName: 'Solana' },
+                    { symbol: 'BNBUSDT', coinName: 'BNB' },
+                    { symbol: 'XRPUSDT', coinName: 'XRP' },
+                    { symbol: 'SUIUSDT', coinName: 'Sui' },
+                    { symbol: 'AVAXUSDT', coinName: 'Avalanche' },
+                    { symbol: 'ADAUSDT', coinName: 'Cardano' },
+                    { symbol: 'NEARUSDT', coinName: 'NEAR' },
+                    { symbol: 'APTUSDT', coinName: 'Aptos' },
+                    { symbol: 'RENDERUSDT', coinName: 'Render' },
+                    { symbol: 'FETUSDT', coinName: 'Artificial Superintelligence' },
+                    { symbol: 'TAOUSDT', coinName: 'Bittensor' },
+                    { symbol: 'LINKUSDT', coinName: 'Chainlink' },
+                    { symbol: 'AAVEUSDT', coinName: 'Aave' },
+                    { symbol: 'UNIUSDT', coinName: 'Uniswap' },
+                    { symbol: 'DOGEUSDT', coinName: 'Dogecoin' },
+                    { symbol: 'PEPEUSDT', coinName: 'Pepe' },
+                    { symbol: 'SHIBUSDT', coinName: 'Shiba Inu' }
+                  ]).map(m => (
+                    <option key={m.symbol} value={m.symbol}>
+                      {m.symbol.replace('USDT', '')} {m.coinName ? `(${m.coinName})` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -196,7 +231,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </span>
                 <span className="text-slate-400 font-sans text-[11px]">Live:</span>
                 <span className="font-bold text-slate-100">
-                  ${activeMarket.price.toLocaleString(undefined, { minimumFractionDigits: activeMarket.price > 10 ? 2 : 4 })}
+                  ${activeMarket.price.toLocaleString(undefined, { 
+                    minimumFractionDigits: activeMarket.price > 10 ? 2 : activeMarket.price > 0.01 ? 4 : 8,
+                    maximumFractionDigits: activeMarket.price > 10 ? 2 : activeMarket.price > 0.01 ? 4 : 8
+                  })}
                 </span>
                 <span className={`text-[11px] font-semibold ${activeMarket.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {activeMarket.change24h >= 0 ? '+' : ''}{activeMarket.change24h.toFixed(2)}%
@@ -260,7 +298,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </span>
                     </div>
                     <span className="font-mono text-xs font-semibold text-slate-200">
-                      ${sig.currentPrice.toLocaleString()}
+                      ${sig.currentPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: sig.currentPrice > 10 ? 2 : sig.currentPrice > 0.01 ? 4 : 8,
+                        maximumFractionDigits: sig.currentPrice > 10 ? 2 : sig.currentPrice > 0.01 ? 4 : 8
+                      })}
                     </span>
                   </div>
 
@@ -269,8 +310,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </p>
 
                   <div className="grid grid-cols-3 gap-1 pt-1 border-t border-slate-800/60 font-mono text-[10px] text-slate-400">
-                    <div>SL: <span className="text-rose-400">${sig.stopLoss}</span></div>
-                    <div>TP1: <span className="text-emerald-400">${sig.takeProfit1}</span></div>
+                    <div>SL: <span className="text-rose-400">${sig.stopLoss.toLocaleString(undefined, {
+                      minimumFractionDigits: sig.stopLoss > 10 ? 2 : sig.stopLoss > 0.01 ? 4 : 8,
+                      maximumFractionDigits: sig.stopLoss > 10 ? 2 : sig.stopLoss > 0.01 ? 4 : 8
+                    })}</span></div>
+                    <div>TP1: <span className="text-emerald-400">${sig.takeProfit1.toLocaleString(undefined, {
+                      minimumFractionDigits: sig.takeProfit1 > 10 ? 2 : sig.takeProfit1 > 0.01 ? 4 : 8,
+                      maximumFractionDigits: sig.takeProfit1 > 10 ? 2 : sig.takeProfit1 > 0.01 ? 4 : 8
+                    })}</span></div>
                     <div>R:R: <span className="text-cyan-300">{sig.riskRewardRatio}:1</span></div>
                   </div>
                 </div>

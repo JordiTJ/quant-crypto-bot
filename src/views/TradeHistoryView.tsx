@@ -131,14 +131,22 @@ export const TradeHistoryView: React.FC<TradeHistoryViewProps> = ({ trades }) =>
                   </td>
 
                   <td className="py-3 px-4 font-mono text-slate-200">
-                    <div>${tr.entryPrice.toLocaleString()} &rarr; ${tr.exitPrice.toLocaleString()}</div>
+                    <div>
+                      ${tr.entryPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: tr.entryPrice > 10 ? 2 : tr.entryPrice > 0.01 ? 4 : 8,
+                        maximumFractionDigits: tr.entryPrice > 10 ? 2 : tr.entryPrice > 0.01 ? 4 : 8
+                      })} &rarr; ${tr.exitPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: tr.exitPrice > 10 ? 2 : tr.exitPrice > 0.01 ? 4 : 8,
+                        maximumFractionDigits: tr.exitPrice > 10 ? 2 : tr.exitPrice > 0.01 ? 4 : 8
+                      })}
+                    </div>
                     <div className="text-[10px] text-slate-500">
                       Duration: {Math.max(1, Math.round((tr.exitTimestamp - tr.entryTimestamp) / 3600000))} hrs
                     </div>
                   </td>
 
                   <td className="py-3 px-4 font-mono">
-                    <div>{tr.amount} {tr.symbol.replace('USDT', '')}</div>
+                    <div>{tr.amount.toLocaleString(undefined, { maximumFractionDigits: tr.amount > 100 ? 2 : 6 })} {tr.symbol.replace('USDT', '')}</div>
                     <div className={`text-[10px] font-bold ${tr.returnR >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {tr.returnR >= 0 ? '+' : ''}{tr.returnR}R
                     </div>

@@ -22,6 +22,28 @@ export const SignalsView: React.FC<SignalsViewProps> = ({ signals, onOpenPaperTr
   const [selectedSignal, setSelectedSignal] = useState<TradingSignal | null>(signals[0] || null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionFeedback, setExecutionFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE_TRIGGER' | 'FORMING_SETUP' | 'OVERBOUGHT' | 'WATCHLIST'>('ALL');
+  const [sortBy, setSortBy] = useState<'SCORE_DESC' | 'SCORE_ASC' | 'SYMBOL'>('SCORE_DESC');
+
+  const filteredSignals = signals
+    .filter(s => {
+      if (statusFilter === 'ALL') return true;
+      return s.triggerStatus === statusFilter;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'SCORE_DESC') return b.scoreBreakdown.totalScore - a.scoreBreakdown.totalScore;
+      if (sortBy === 'SCORE_ASC') return a.scoreBreakdown.totalScore - b.scoreBreakdown.totalScore;
+      return a.symbol.localeCompare(b.symbol);
+    });
+
+  const activeSignal = (selectedSignal && filteredSignals.some(s => s.id === selectedSignal.id))
+    ? selectedSignal
+    : (filteredSignals[0] || selectedSignal);
+
+  const countActive = signals.filter(s => s.triggerStatus === 'ACTIVE_TRIGGER').length;
+  const countForming = signals.filter(s => s.triggerStatus === 'FORMING_SETUP').length;
+  const countOverbought = signals.filter(s => s.triggerStatus === 'OVERBOUGHT').length;
+  const countWatchlist = signals.filter(s => s.triggerStatus === 'WATCHLIST').length;
 
   const handleExecute = async (sig: TradingSignal) => {
     if (!onExecuteTrade) return;
@@ -55,16 +77,67 @@ export const SignalsView: React.FC<SignalsViewProps> = ({ signals, onOpenPaperTr
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Col (5 cols): Signal Cards */}
         <div className="lg:col-span-5 space-y-3">
-          <div className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider px-1">
-            Live Monitored Universe ({signals.length})
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-wider">
+              Universe ({signals.length})
+            </div>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-[11px] text-slate-300 font-mono focus:outline-none focus:border-cyan-500"
+            >
+              <option value="SCORE_DESC">Score: Hoog &rarr; Laag</option>
+              <option value="SCORE_ASC">Score: Laag &rarr; Hoog</option>
+              <option value="SYMBOL">Symbool (A-Z)</option>
+            </select>
+          </div>
+
+          {/* Status Filter Badges */}
+          <div className="flex flex-wrap gap-1 p-1 bg-slate-900/80 rounded-lg border border-slate-800/80 text-[11px] font-mono">
+            <button
+              onClick={() => setStatusFilter('ALL')}
+              className={`px-2 py-1 rounded transition ${statusFilter === 'ALL' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Alle ({signals.length})
+            </button>
+            <button
+              onClick={() => setStatusFilter('ACTIVE_TRIGGER')}
+              className={`px-2 py-1 rounded transition ${statusFilter === 'ACTIVE_TRIGGER' ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              ⚡ Triggers ({countActive})
+            </button>
+            <button
+              onClick={() => setStatusFilter('FORMING_SETUP')}
+              className={`px-2 py-1 rounded transition ${statusFilter === 'FORMING_SETUP' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              ⏳ Setups ({countForming})
+            </button>
+            <button
+              onClick={() => setStatusFilter('OVERBOUGHT')}
+              className={`px-2 py-1 rounded transition ${statusFilter === 'OVERBOUGHT' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              ⚠️ Overbought ({countOverbought})
+            </button>
+            <button
+              onClick={() => setStatusFilter('WATCHLIST')}
+              className={`px-2 py-1 rounded transition ${statusFilter === 'WATCHLIST' ? 'bg-slate-800 text-slate-300 font-bold border border-slate-700' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              👁️ Watchlist ({countWatchlist})
+            </button>
           </div>
 
           <div className="space-y-2.5">
-            {signals.map(sig => {
-              const isSelected = selectedSignal?.id === sig.id;
-              const isStrong = sig.confidence === 'STRONG';
-              const isMod = sig.confidence === 'MODERATE';
-              const isWeak = sig.confidence === 'WEAK';
+            {filteredSignals.length === 0 ? (
+              <div className="p-6 text-center text-xs text-slate-500 bg-slate-900 rounded-lg border border-slate-800">
+                Geen signalen met status &quot;{statusFilter}&quot;.
+              </div>
+            ) : filteredSignals.map(sig => {
+              const isSelected = activeSignal?.id === sig.id;
+              const scoreVal = sig.scoreBreakdown.totalScore;
+              const isStrong = scoreVal >= 80;
+              const isMod = scoreVal >= 70 && scoreVal < 80;
+              const isWeak = scoreVal >= 55 && scoreVal < 70;
 
               return (
                 <div
@@ -86,14 +159,17 @@ export const SignalsView: React.FC<SignalsViewProps> = ({ signals, onOpenPaperTr
                           ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                           : isWeak
                           ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                          : 'bg-slate-800 text-slate-400'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                       }`}>
-                        {sig.confidence} ({sig.scoreBreakdown.totalScore}/100)
+                        {sig.confidence} ({scoreVal}/100)
                       </span>
                     </div>
 
                     <span className="font-mono font-bold text-slate-200 text-xs">
-                      ${sig.currentPrice.toLocaleString(undefined, { minimumFractionDigits: sig.currentPrice > 10 ? 2 : 4 })}
+                      ${sig.currentPrice.toLocaleString(undefined, { 
+                        minimumFractionDigits: sig.currentPrice > 10 ? 2 : sig.currentPrice > 0.01 ? 4 : 8,
+                        maximumFractionDigits: sig.currentPrice > 10 ? 2 : sig.currentPrice > 0.01 ? 4 : 8
+                      })}
                     </span>
                   </div>
 
@@ -279,25 +355,37 @@ export const SignalsView: React.FC<SignalsViewProps> = ({ signals, onOpenPaperTr
                 <div>
                   <div className="text-[10px] text-slate-400 uppercase">Suggested Entry</div>
                   <div className="text-sm font-bold text-slate-100 mt-0.5">
-                    ${selectedSignal.suggestedEntry}
+                    ${selectedSignal.suggestedEntry.toLocaleString(undefined, {
+                      minimumFractionDigits: selectedSignal.suggestedEntry > 10 ? 2 : selectedSignal.suggestedEntry > 0.01 ? 4 : 8,
+                      maximumFractionDigits: selectedSignal.suggestedEntry > 10 ? 2 : selectedSignal.suggestedEntry > 0.01 ? 4 : 8
+                    })}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-rose-400 uppercase">Stop Loss (Hard)</div>
                   <div className="text-sm font-bold text-rose-400 mt-0.5">
-                    ${selectedSignal.stopLoss}
+                    ${selectedSignal.stopLoss.toLocaleString(undefined, {
+                      minimumFractionDigits: selectedSignal.stopLoss > 10 ? 2 : selectedSignal.stopLoss > 0.01 ? 4 : 8,
+                      maximumFractionDigits: selectedSignal.stopLoss > 10 ? 2 : selectedSignal.stopLoss > 0.01 ? 4 : 8
+                    })}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-emerald-400 uppercase">Target 1 (1.5R)</div>
                   <div className="text-sm font-bold text-emerald-400 mt-0.5">
-                    ${selectedSignal.takeProfit1}
+                    ${selectedSignal.takeProfit1.toLocaleString(undefined, {
+                      minimumFractionDigits: selectedSignal.takeProfit1 > 10 ? 2 : selectedSignal.takeProfit1 > 0.01 ? 4 : 8,
+                      maximumFractionDigits: selectedSignal.takeProfit1 > 10 ? 2 : selectedSignal.takeProfit1 > 0.01 ? 4 : 8
+                    })}
                   </div>
                 </div>
                 <div>
                   <div className="text-[10px] text-cyan-400 uppercase">Target 2 (2.5R)</div>
                   <div className="text-sm font-bold text-cyan-400 mt-0.5">
-                    ${selectedSignal.takeProfit2}
+                    ${selectedSignal.takeProfit2.toLocaleString(undefined, {
+                      minimumFractionDigits: selectedSignal.takeProfit2 > 10 ? 2 : selectedSignal.takeProfit2 > 0.01 ? 4 : 8,
+                      maximumFractionDigits: selectedSignal.takeProfit2 > 10 ? 2 : selectedSignal.takeProfit2 > 0.01 ? 4 : 8
+                    })}
                   </div>
                 </div>
               </div>

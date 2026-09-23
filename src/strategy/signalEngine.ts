@@ -73,41 +73,66 @@ export class SignalEngine {
     mtf: MultiTimeframeAnalysis
   ): SignalScoreBreakdown {
     let trendScore = 0;
-    // EMA hierarchy: +12 if price > ema50 > ema200, +8 if ema9 > ema21, +10 for strong ADX & +DI
+    // EMA hierarchy: +12 if price > ema50 > ema200, +6 if price > ema50 only
     if (price > ind.ema50 && ind.ema50 > ind.ema200) trendScore += 12;
     else if (price > ind.ema50) trendScore += 6;
+    else if (price < ind.ema50 && price < ind.ema200) trendScore += 0;
 
+    // Short-term trend momentum
     if (ind.ema9 > ind.ema21) trendScore += 8;
-    if (ind.adx > 22 && ind.plusDi > ind.minusDi) trendScore += 10;
-    else if (ind.plusDi > ind.minusDi) trendScore += 4;
+
+    // Trend velocity & direction
+    if (ind.adx >= 24 && ind.plusDi > ind.minusDi) trendScore += 10;
+    else if (ind.adx >= 18 && ind.plusDi > ind.minusDi) trendScore += 6;
+    else if (ind.plusDi > ind.minusDi) trendScore += 3;
     trendScore = Math.min(30, trendScore);
 
     let momentumScore = 0;
-    // RSI in sweet spot (52-66): +12, MACD positive: +8, StochRSI healthy: +5
-    if (ind.rsi14 >= 52 && ind.rsi14 <= 66) momentumScore += 12;
-    else if (ind.rsi14 >= 46 && ind.rsi14 < 72) momentumScore += 7;
+    // RSI scoring
+    if (ind.rsi14 >= 54 && ind.rsi14 <= 68) momentumScore += 12; // Prime non-overbought trend
+    else if (ind.rsi14 >= 48 && ind.rsi14 < 54) momentumScore += 7; // Neutral/moderate
+    else if (ind.rsi14 > 68 && ind.rsi14 <= 72) momentumScore += 5; // Near overbought
+    else if (ind.rsi14 > 72) momentumScore += 2; // Overbought exhaustion risk
+    else if (ind.rsi14 >= 40 && ind.rsi14 < 48) momentumScore += 4; // Pullback territory
+    else momentumScore += 1;
 
-    if (ind.macd.histogram > 0) momentumScore += 8;
-    if (ind.stochRsi.k > ind.stochRsi.d && ind.stochRsi.k < 80) momentumScore += 5;
+    // MACD confirmation
+    if (ind.macd.histogram > 0 && ind.macd.macd > ind.macd.signal) momentumScore += 8;
+    else if (ind.macd.histogram > 0) momentumScore += 5;
+    else momentumScore += 0;
+
+    // StochRSI condition
+    if (ind.stochRsi.k > ind.stochRsi.d && ind.stochRsi.k <= 75) momentumScore += 5;
+    else if (ind.stochRsi.k < 25 && ind.stochRsi.k > ind.stochRsi.d) momentumScore += 4;
+    else if (ind.stochRsi.k <= 75) momentumScore += 2;
+    else momentumScore += 1;
     momentumScore = Math.min(25, momentumScore);
 
     let volumeScore = 0;
-    // RVol > 1.4: +12, OBV increasing: +5, Price > VWAP: +3
-    if (ind.relativeVolume >= 1.4) volumeScore += 12;
-    else if (ind.relativeVolume >= 1.1) volumeScore += 7;
+    // Relative volume
+    if (ind.relativeVolume >= 1.45) volumeScore += 12;
+    else if (ind.relativeVolume >= 1.15) volumeScore += 8;
     else if (ind.relativeVolume >= 0.95) volumeScore += 4;
+    else volumeScore += 1;
 
+    // Price vs VWAP
     if (price > ind.vwap) volumeScore += 4;
-    if (ind.relativeVolume > 1.0) volumeScore += 4;
+
+    // Volume trend confirmation
+    if (ind.relativeVolume > 1.05 && price > ind.ema9) volumeScore += 4;
+    else if (ind.relativeVolume >= 0.9) volumeScore += 2;
     volumeScore = Math.min(20, volumeScore);
 
     let volatilityScore = 0;
-    // ATR% between 1.5% and 3.5% is ideal for risk/reward in crypto
-    if (ind.atrPercent >= 1.5 && ind.atrPercent <= 3.8) volatilityScore += 10;
-    else if (ind.atrPercent < 1.5) volatilityScore += 5; // Low vol
-    else volatilityScore += 4; // High vol
+    // ATR% between 1.4% and 3.5% is ideal for crypto risk/reward
+    if (ind.atrPercent >= 1.4 && ind.atrPercent <= 3.6) volatilityScore += 10;
+    else if (ind.atrPercent < 1.4) volatilityScore += 6; // Low vol compression
+    else volatilityScore += 4; // High vol / wider stops
 
-    if (ind.bollingerBands.width >= 4.0 && ind.bollingerBands.width <= 10.0) volatilityScore += 5;
+    // Bollinger Bands structure
+    if (ind.bollingerBands.width >= 4.0 && ind.bollingerBands.width <= 9.5 && price > ind.bollingerBands.middle) volatilityScore += 5;
+    else if (ind.bollingerBands.width < 3.8) volatilityScore += 3; // Squeeze preparing for move
+    else volatilityScore += 2;
     volatilityScore = Math.min(15, volatilityScore);
 
     let regimeScore = 0;
@@ -117,13 +142,13 @@ export class SignalEngine {
     else if (regime === 'LOW_VOLATILITY') regimeScore = 3;
     else regimeScore = 1;
 
-    // Bonus for MTF alignment
+    // MTF alignment adjustment
+    let totalScore = trendScore + momentumScore + volumeScore + volatilityScore + regimeScore;
     if (mtf.aligned) {
-      trendScore = Math.min(30, trendScore + 2);
-      momentumScore = Math.min(25, momentumScore + 2);
+      totalScore += 3;
+    } else if (mtf.macro4h.trend === 'BEAR' && regime !== 'STRONG_BULL') {
+      totalScore -= 6;
     }
-
-    const totalScore = trendScore + momentumScore + volumeScore + volatilityScore + regimeScore;
 
     return {
       trendScore,
@@ -216,15 +241,24 @@ export class SignalEngine {
       takeProfit1 = trendEval.takeProfit1;
       takeProfit2 = trendEval.takeProfit2;
       rationale = trendEval.rationale;
-    } else if (score.totalScore >= 70 && mtf.aligned && ind1h.rsi14 < 68) {
-      // High score with MTF alignment can form a valid multi-factor entry
+    } else if (score.totalScore >= 80 && mtf.aligned && ind1h.rsi14 <= 68) {
+      // High conviction multi-factor alignment acts as qualified entry
       triggerActive = true;
       strategyName = 'Multi-Factor Trend Expansion';
       const stopDist = Math.max(latestCandle.close * 0.018, ind1h.atr * 2.0);
       stopLoss = Number((latestCandle.close - stopDist).toFixed(4));
       takeProfit1 = Number((latestCandle.close + stopDist * 1.5).toFixed(4));
       takeProfit2 = Number((latestCandle.close + stopDist * 2.5).toFixed(4));
-      rationale = `Sterke factor convergentie (${score.totalScore}/100) met bevestigde 4H/1H/15M alignment en gunstig volume (${ind1h.relativeVolume.toFixed(1)}x)`;
+      rationale = `Hoge factor convergentie (${score.totalScore}/100) met bevestigde 4H/1H/15M alignment en gunstig volume (${ind1h.relativeVolume.toFixed(1)}x)`;
+    } else if (score.totalScore >= 70) {
+      // Solid candidate setup but awaiting precise 15M trigger or breakout
+      triggerActive = false;
+      strategyName = 'Multi-Factor Trend (Awaiting Trigger)';
+      const stopDist = Math.max(latestCandle.close * 0.018, ind1h.atr * 2.0);
+      stopLoss = Number((latestCandle.close - stopDist).toFixed(4));
+      takeProfit1 = Number((latestCandle.close + stopDist * 1.5).toFixed(4));
+      takeProfit2 = Number((latestCandle.close + stopDist * 2.5).toFixed(4));
+      rationale = `Kwalificerende setup (${score.totalScore}/100). Wacht op definitieve 15M breakout of volume-impuls alvorens in te stappen.`;
     }
 
     // Determine triggerStatus and safe execution action
@@ -236,10 +270,10 @@ export class SignalEngine {
       action = 'HOLD';
       triggerActive = false;
       rationale = `Momentum overextended (RSI ${ind1h.rsi14.toFixed(1)}). Wacht op gezonde retest of pullback voor nieuwe instap.`;
-    } else if (triggerActive && score.totalScore >= 70 && mtf.aligned) {
+    } else if (triggerActive && score.totalScore >= 75 && mtf.aligned) {
       triggerStatus = 'ACTIVE_TRIGGER';
       action = 'BUY';
-    } else if (score.totalScore >= 65) {
+    } else if (score.totalScore >= 68) {
       triggerStatus = 'FORMING_SETUP';
       action = 'HOLD';
       if (!rationale) {
@@ -300,6 +334,15 @@ export class SignalEngine {
     const riskAmt = defaultEquity * 0.005;
     const suggestedAmount = stopDistance > 0 ? riskAmt / stopDistance : 0;
     const suggestedPositionSizeUsd = Number((suggestedAmount * entryPrice).toFixed(2));
+
+    // Adaptive precision formatting based on asset price magnitude
+    const isMicro = latestCandle.close < 0.001;
+    const isSubDollar = latestCandle.close < 5.0;
+    const prec = isMicro ? 8 : isSubDollar ? 4 : 2;
+
+    stopLoss = Number(stopLoss.toFixed(prec));
+    takeProfit1 = Number(takeProfit1.toFixed(prec));
+    takeProfit2 = Number(takeProfit2.toFixed(prec));
 
     return {
       id: `SIG_${symbol}_${Date.now()}`,

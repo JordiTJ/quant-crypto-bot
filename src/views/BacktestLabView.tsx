@@ -98,12 +98,33 @@ export const BacktestLabView: React.FC = () => {
               onChange={(e) => setConfig({ ...config, symbol: e.target.value })}
               className="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-700 text-slate-200"
             >
-              <option value="BTCUSDT">BTC/USDT</option>
-              <option value="ETHUSDT">ETH/USDT</option>
-              <option value="SOLUSDT">SOL/USDT</option>
-              <option value="BNBUSDT">BNB/USDT</option>
-              <option value="AVAXUSDT">AVAX/USDT</option>
-              <option value="SUIUSDT">SUI/USDT</option>
+              <optgroup label="👑 Majors & L1s">
+                <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
+                <option value="ETHUSDT">ETH/USDT (Ethereum)</option>
+                <option value="SOLUSDT">SOL/USDT (Solana)</option>
+                <option value="BNBUSDT">BNB/USDT (BNB)</option>
+                <option value="XRPUSDT">XRP/USDT (XRP)</option>
+                <option value="SUIUSDT">SUI/USDT (Sui)</option>
+                <option value="AVAXUSDT">AVAX/USDT (Avalanche)</option>
+                <option value="ADAUSDT">ADA/USDT (Cardano)</option>
+                <option value="NEARUSDT">NEAR/USDT (NEAR)</option>
+                <option value="APTUSDT">APT/USDT (Aptos)</option>
+              </optgroup>
+              <optgroup label="🤖 AI & Data">
+                <option value="TAOUSDT">TAO/USDT (Bittensor)</option>
+                <option value="RENDERUSDT">RENDER/USDT (Render)</option>
+                <option value="FETUSDT">FET/USDT (ASI FET)</option>
+              </optgroup>
+              <optgroup label="🏦 DeFi & Infra">
+                <option value="LINKUSDT">LINK/USDT (Chainlink)</option>
+                <option value="AAVEUSDT">AAVE/USDT (Aave)</option>
+                <option value="UNIUSDT">UNI/USDT (Uniswap)</option>
+              </optgroup>
+              <optgroup label="🔥 Memes">
+                <option value="DOGEUSDT">DOGE/USDT (Dogecoin)</option>
+                <option value="PEPEUSDT">PEPE/USDT (Pepe)</option>
+                <option value="SHIBUSDT">SHIB/USDT (Shiba Inu)</option>
+              </optgroup>
             </select>
           </div>
 

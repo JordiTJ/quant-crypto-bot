@@ -32,6 +32,8 @@ export interface MarketTicker {
   symbol: string;
   baseAsset: string;
   quoteAsset: string;
+  coinName?: string;
+  category?: 'LAYER_1' | 'DEFI' | 'MEME' | 'AI_DATA' | 'INFRA' | 'MAJOR';
   price: number;
   change24h: number;
   high24h: number;

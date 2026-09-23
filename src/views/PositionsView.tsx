@@ -151,32 +151,60 @@ export const PositionsView: React.FC<PositionsViewProps> = ({
                       </td>
 
                       <td className="py-3 px-4 font-mono">
-                        <div className="text-slate-300">${p.entryPrice.toLocaleString()} &rarr; <strong className="text-slate-100">${currentPrice.toLocaleString()}</strong></div>
+                        <div className="text-slate-300">
+                          ${p.entryPrice.toLocaleString(undefined, {
+                            minimumFractionDigits: p.entryPrice > 10 ? 2 : p.entryPrice > 0.01 ? 4 : 8,
+                            maximumFractionDigits: p.entryPrice > 10 ? 2 : p.entryPrice > 0.01 ? 4 : 8
+                          })} &rarr; <strong className="text-slate-100">
+                            ${currentPrice.toLocaleString(undefined, {
+                              minimumFractionDigits: currentPrice > 10 ? 2 : currentPrice > 0.01 ? 4 : 8,
+                              maximumFractionDigits: currentPrice > 10 ? 2 : currentPrice > 0.01 ? 4 : 8
+                            })}
+                          </strong>
+                        </div>
                         <div className="text-[10px] text-slate-500 mt-0.5">
                           Entered: {new Date(p.entryTimestamp).toLocaleTimeString()}
                         </div>
                       </td>
 
                       <td className="py-3 px-4 font-mono text-slate-300">
-                        <div>{p.amount} {p.symbol.replace('USDT', '')}</div>
+                        <div>{p.amount.toLocaleString(undefined, { maximumFractionDigits: p.amount > 100 ? 2 : 6 })} {p.symbol.replace('USDT', '')}</div>
                         <div className="text-[10px] text-slate-500">${p.valueUsd.toFixed(2)}</div>
                       </td>
 
                       <td className="py-3 px-4 font-mono">
-                        <div className="text-rose-400 font-semibold">${p.stopLoss}</div>
+                        <div className="text-rose-400 font-semibold">
+                          ${p.stopLoss.toLocaleString(undefined, {
+                            minimumFractionDigits: p.stopLoss > 10 ? 2 : p.stopLoss > 0.01 ? 4 : 8,
+                            maximumFractionDigits: p.stopLoss > 10 ? 2 : p.stopLoss > 0.01 ? 4 : 8
+                          })}
+                        </div>
                         <div className="text-[10px] text-slate-500">Buffer: -{stopDistancePct.toFixed(2)}%</div>
                       </td>
 
                       <td className="py-3 px-4 font-mono text-[11px]">
-                        <div className="text-emerald-400">TP1: ${p.takeProfit1}</div>
-                        <div className="text-cyan-400">TP2: ${p.takeProfit2}</div>
+                        <div className="text-emerald-400">
+                          TP1: ${p.takeProfit1.toLocaleString(undefined, {
+                            minimumFractionDigits: p.takeProfit1 > 10 ? 2 : p.takeProfit1 > 0.01 ? 4 : 8,
+                            maximumFractionDigits: p.takeProfit1 > 10 ? 2 : p.takeProfit1 > 0.01 ? 4 : 8
+                          })}
+                        </div>
+                        <div className="text-cyan-400">
+                          TP2: ${p.takeProfit2.toLocaleString(undefined, {
+                            minimumFractionDigits: p.takeProfit2 > 10 ? 2 : p.takeProfit2 > 0.01 ? 4 : 8,
+                            maximumFractionDigits: p.takeProfit2 > 10 ? 2 : p.takeProfit2 > 0.01 ? 4 : 8
+                          })}
+                        </div>
                       </td>
 
                       <td className="py-3 px-4 font-mono">
-                        {p.trailingStopActive ? (
+                        {p.trailingStopActive && p.trailingStopPrice ? (
                           <span className="inline-flex items-center gap-1 text-cyan-300 text-xs">
                             <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
-                            ${p.trailingStopPrice}
+                            ${p.trailingStopPrice.toLocaleString(undefined, {
+                              minimumFractionDigits: p.trailingStopPrice > 10 ? 2 : p.trailingStopPrice > 0.01 ? 4 : 8,
+                              maximumFractionDigits: p.trailingStopPrice > 10 ? 2 : p.trailingStopPrice > 0.01 ? 4 : 8
+                            })}
                           </span>
                         ) : (
                           <span className="text-slate-500 text-xs">Inactive</span>
