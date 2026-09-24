@@ -122,21 +122,31 @@ export class PhemexAdapter extends ExchangeAdapter {
       { symbol: 'ADAUSDT', baseAsset: 'ADA', coinName: 'Cardano', category: 'LAYER_1', defaultPrice: 0.25, marketCapUsd: 9000000000 },
       { symbol: 'NEARUSDT', baseAsset: 'NEAR', coinName: 'NEAR Protocol', category: 'LAYER_1', defaultPrice: 4.85, marketCapUsd: 5600000000 },
       { symbol: 'APTUSDT', baseAsset: 'APT', coinName: 'Aptos', category: 'LAYER_1', defaultPrice: 6.20, marketCapUsd: 2700000000 },
+      { symbol: 'INJUSDT', baseAsset: 'INJ', coinName: 'Injective', category: 'LAYER_1', defaultPrice: 8.20, marketCapUsd: 2100000000 },
+      { symbol: 'SEIUSDT', baseAsset: 'SEI', coinName: 'Sei Network', category: 'LAYER_1', defaultPrice: 0.06, marketCapUsd: 1400000000 },
 
-      // AI & Decentralized Data Intelligence (Top Trending Sector)
+      // AI, Decentralized Data & High-Performance Compute
       { symbol: 'RENDERUSDT', baseAsset: 'RENDER', coinName: 'Render Network', category: 'AI_DATA', defaultPrice: 4.15, marketCapUsd: 2100000000 },
       { symbol: 'FETUSDT', baseAsset: 'FET', coinName: 'Artificial Superintelligence (FET)', category: 'AI_DATA', defaultPrice: 1.35, marketCapUsd: 3400000000 },
       { symbol: 'TAOUSDT', baseAsset: 'TAO', coinName: 'Bittensor', category: 'AI_DATA', defaultPrice: 380.0, marketCapUsd: 2800000000 },
+      { symbol: 'ICPUSDT', baseAsset: 'ICP', coinName: 'Internet Computer', category: 'AI_DATA', defaultPrice: 3.10, marketCapUsd: 3900000000 },
 
-      // High Liquidity DeFi & Oracles
+      // High Liquidity DeFi, RWA & Oracles
       { symbol: 'LINKUSDT', baseAsset: 'LINK', coinName: 'Chainlink Oracle', category: 'INFRA', defaultPrice: 13.0, marketCapUsd: 8000000000 },
       { symbol: 'AAVEUSDT', baseAsset: 'AAVE', coinName: 'Aave Protocol', category: 'DEFI', defaultPrice: 155.0, marketCapUsd: 2300000000 },
       { symbol: 'UNIUSDT', baseAsset: 'UNI', coinName: 'Uniswap DEX', category: 'DEFI', defaultPrice: 7.20, marketCapUsd: 4300000000 },
+      { symbol: 'ONDOUSDT', baseAsset: 'ONDO', coinName: 'Ondo Finance (RWA)', category: 'DEFI', defaultPrice: 0.48, marketCapUsd: 1300000000 },
+      { symbol: 'PENDLEUSDT', baseAsset: 'PENDLE', coinName: 'Pendle Finance', category: 'DEFI', defaultPrice: 2.48, marketCapUsd: 720000000 },
+      { symbol: 'JUPUSDT', baseAsset: 'JUP', coinName: 'Jupiter Exchange', category: 'DEFI', defaultPrice: 0.30, marketCapUsd: 1300000000 },
 
-      // High-Volume Memecoins
+      // Modular Data Availability & Infrastructure
+      { symbol: 'TIAUSDT', baseAsset: 'TIA', coinName: 'Celestia Modular DA', category: 'INFRA', defaultPrice: 0.47, marketCapUsd: 1200000000 },
+
+      // High-Volume Cult & High-Beta Memecoins
       { symbol: 'DOGEUSDT', baseAsset: 'DOGE', coinName: 'Dogecoin', category: 'MEME', defaultPrice: 0.10, marketCapUsd: 15000000000 },
       { symbol: 'PEPEUSDT', baseAsset: 'PEPE', coinName: 'Pepe', category: 'MEME', defaultPrice: 0.0000085, marketCapUsd: 3600000000 },
-      { symbol: 'SHIBUSDT', baseAsset: 'SHIB', coinName: 'Shiba Inu', category: 'MEME', defaultPrice: 0.000014, marketCapUsd: 8200000000 }
+      { symbol: 'SHIBUSDT', baseAsset: 'SHIB', coinName: 'Shiba Inu', category: 'MEME', defaultPrice: 0.000014, marketCapUsd: 8200000000 },
+      { symbol: 'WIFUSDT', baseAsset: 'WIF', coinName: 'dogwifhat', category: 'MEME', defaultPrice: 0.24, marketCapUsd: 2200000000 }
     ];
 
     try {

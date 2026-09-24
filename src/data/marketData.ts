@@ -99,6 +99,14 @@ export class MarketDataEngine {
       else if (symbol.includes('UNI')) basePrice = 7.20;
       else if (symbol.includes('PEPE')) basePrice = 0.0000085;
       else if (symbol.includes('SHIB')) basePrice = 0.000014;
+      else if (symbol.includes('INJ')) basePrice = 8.20;
+      else if (symbol.includes('SEI')) basePrice = 0.06;
+      else if (symbol.includes('ICP')) basePrice = 3.10;
+      else if (symbol.includes('ONDO')) basePrice = 0.48;
+      else if (symbol.includes('PENDLE')) basePrice = 2.48;
+      else if (symbol.includes('JUP')) basePrice = 0.30;
+      else if (symbol.includes('TIA')) basePrice = 0.47;
+      else if (symbol.includes('WIF')) basePrice = 0.24;
     }
 
     // Derive deterministic unique symbol seed based on full symbol characters
@@ -108,12 +116,14 @@ export class MarketDataEngine {
     }
 
     // Asset classification volatility & beta profiles
-    const isMeme = symbol.includes('PEPE') || symbol.includes('SHIB') || symbol.includes('DOGE');
+    const isMeme = symbol.includes('PEPE') || symbol.includes('SHIB') || symbol.includes('DOGE') || symbol.includes('WIF');
     const isMajor = symbol.includes('BTC') || symbol.includes('ETH');
-    const isAi = symbol.includes('TAO') || symbol.includes('RENDER') || symbol.includes('FET');
-    const isL1 = symbol.includes('SOL') || symbol.includes('SUI') || symbol.includes('AVAX') || symbol.includes('NEAR') || symbol.includes('APT');
+    const isAi = symbol.includes('TAO') || symbol.includes('RENDER') || symbol.includes('FET') || symbol.includes('ICP');
+    const isL1 = symbol.includes('SOL') || symbol.includes('SUI') || symbol.includes('AVAX') || symbol.includes('NEAR') || symbol.includes('APT') || symbol.includes('INJ') || symbol.includes('SEI');
+    const isDeFi = symbol.includes('AAVE') || symbol.includes('UNI') || symbol.includes('ONDO') || symbol.includes('PENDLE') || symbol.includes('JUP');
+    const isInfra = symbol.includes('LINK') || symbol.includes('TIA');
 
-    const baseVolMultiplier = isMeme ? 2.2 : isAi ? 1.55 : isL1 ? 1.3 : isMajor ? 0.85 : 1.1;
+    const baseVolMultiplier = isMeme ? 2.2 : isAi ? 1.55 : isL1 ? 1.3 : isMajor ? 0.85 : isDeFi ? 1.2 : isInfra ? 1.15 : 1.1;
 
     const intervalMinutes = timeframe === '5m' ? 5 : timeframe === '15m' ? 15 : timeframe === '1h' ? 60 : timeframe === '4h' ? 240 : 1440;
     const intervalMs = intervalMinutes * 60 * 1000;

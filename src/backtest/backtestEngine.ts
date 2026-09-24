@@ -53,6 +53,7 @@ export class BacktestEngine {
       regime: MarketRegime;
       signalScore: number;
       indicators: { adx: number; rsi: number; atrPercent: number; rvol: number };
+      holdingDurationCandles: number;
     } | null = null;
 
     let totalFeesPaid = 0;
@@ -268,7 +269,8 @@ export class BacktestEngine {
                 rsi: indicators.rsi14,
                 atrPercent: indicators.atrPercent,
                 rvol: indicators.relativeVolume
-              }
+              },
+              holdingDurationCandles: 0
             };
           }
         }

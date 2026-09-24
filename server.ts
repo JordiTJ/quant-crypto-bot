@@ -197,12 +197,7 @@ app.get('/api/signals', async (req, res) => {
       });
     }
 
-    const symbols = [
-      'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 
-      'SUIUSDT', 'AVAXUSDT', 'ADAUSDT', 'NEARUSDT', 'APTUSDT', 
-      'RENDERUSDT', 'FETUSDT', 'TAOUSDT', 'LINKUSDT', 'AAVEUSDT', 
-      'UNIUSDT', 'DOGEUSDT', 'PEPEUSDT', 'SHIBUSDT'
-    ];
+    const symbols = markets.map(m => m.symbol);
     const signals = symbols.map(sym => SignalEngine.generateSignal(sym, priceMap.get(sym)));
     res.json({ signals });
   } catch (err: any) {
@@ -588,12 +583,7 @@ async function runAutonomousBackgroundEngine() {
 
     // 2. 24/7 Autonomous Auto-Trading: If Auto-Bot toggle is enabled, scan and execute qualified triggers
     if (globalExchangeManager.isAutoTradingEnabled() && !globalExchangeManager.isEmergencyKillSwitchActive()) {
-      const symbols = [
-        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT', 
-        'SUIUSDT', 'AVAXUSDT', 'ADAUSDT', 'NEARUSDT', 'APTUSDT', 
-        'RENDERUSDT', 'FETUSDT', 'TAOUSDT', 'LINKUSDT', 'AAVEUSDT', 
-        'UNIUSDT', 'DOGEUSDT', 'PEPEUSDT', 'SHIBUSDT'
-      ];
+      const symbols = markets.map(m => m.symbol);
       for (const sym of symbols) {
         const livePrice = priceMap.get(sym);
         const sig = SignalEngine.generateSignal(sym, livePrice);

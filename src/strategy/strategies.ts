@@ -32,12 +32,15 @@ export class StrategyDefinitions {
     atrMultiplier = 2.0
   ): StrategySignalResult {
     const isEmaBull = ind.ema9 > ind.ema21 && ind.ema21 > ind.ema50 && candle.close > ind.ema50;
-    const isAdxStrong = ind.adx >= adxThreshold && ind.plusDi > ind.minusDi;
-    const isRsiHealthy = ind.rsi14 >= 50 && ind.rsi14 <= 70;
+    const isAdxStrong = ind.adx >= adxThreshold && ind.plusDi > ind.minusDi && (ind.plusDi - ind.minusDi) >= 2.5;
+    const isRsiHealthy = ind.rsi14 >= 50 && ind.rsi14 <= 68;
     const isVolumeConfirmed = ind.relativeVolume >= 1.05;
     const isRegimeFavorable = regime === 'STRONG_BULL' || regime === 'WEAK_BULL';
+    // Extension Guard: Do NOT chase trades if price is already > 4.5% stretched above EMA50 (prevent late-cycle top buying)
+    const distanceEma50Percent = ind.ema50 > 0 ? ((candle.close - ind.ema50) / ind.ema50) * 100 : 0;
+    const isNotOverExtended = distanceEma50Percent <= 4.5;
 
-    const triggered = isEmaBull && isAdxStrong && isRsiHealthy && isVolumeConfirmed && isRegimeFavorable;
+    const triggered = isEmaBull && isAdxStrong && isRsiHealthy && isVolumeConfirmed && isRegimeFavorable && isNotOverExtended;
 
     const stopDistance = Math.max(candle.close * 0.015, ind.atr * atrMultiplier);
     const stopLoss = candle.close - stopDistance;
@@ -51,7 +54,7 @@ export class StrategyDefinitions {
       takeProfit1: Number(takeProfit1.toFixed(4)),
       takeProfit2: Number(takeProfit2.toFixed(4)),
       rationale: triggered 
-        ? `EMA alignment (9>21>50) confirmed by ADX (${ind.adx.toFixed(1)}) and RVol (${ind.relativeVolume.toFixed(2)})`
+        ? `EMA alignment (9>21>50) confirmed by ADX (${ind.adx.toFixed(1)}), non-extended distance (${distanceEma50Percent.toFixed(1)}%) and RVol (${ind.relativeVolume.toFixed(2)})`
         : 'Trend following conditions not met'
     };
   }
@@ -73,8 +76,10 @@ export class StrategyDefinitions {
     const isVolumeSurge = ind.relativeVolume >= 1.35;
     const isMacdBullish = ind.macd.histogram > 0;
     const isAboveEma200 = candle.close > ind.ema200;
+    // Anti-Blow-Off Guard: Confirm active trend expansion without buying in extreme RSI exhaustion (> 76)
+    const isHealthyMomentum = ind.rsi14 <= 76 && ind.adx >= 18;
 
-    const triggered = isBreakout && isVolumeSurge && isMacdBullish && isAboveEma200;
+    const triggered = isBreakout && isVolumeSurge && isMacdBullish && isAboveEma200 && isHealthyMomentum;
 
     const stopDistance = Math.max(candle.close * 0.018, ind.atr * atrMultiplier);
     const stopLoss = candle.close - stopDistance;
@@ -88,7 +93,7 @@ export class StrategyDefinitions {
       takeProfit1: Number(takeProfit1.toFixed(4)),
       takeProfit2: Number(takeProfit2.toFixed(4)),
       rationale: triggered
-        ? `Donchian channel breakout above ${ind.donchian.upper.toFixed(2)} with explosive RVol (${ind.relativeVolume.toFixed(2)})`
+        ? `Donchian channel breakout above ${ind.donchian.upper.toFixed(2)} with explosive RVol (${ind.relativeVolume.toFixed(2)}) and healthy RSI (${ind.rsi14.toFixed(1)})`
         : 'No breakout detected'
     };
   }
@@ -97,9 +102,10 @@ export class StrategyDefinitions {
    * Strategy C: Pullback Strategy
    * Conditions:
    * 1. Macro trend bullish: Price above EMA200 and EMA50 > EMA200
-   * 2. Price retraced towards EMA21 / EMA50 (distance within 1.5% of EMA21)
-   * 3. RSI pulled back to 42 - 54 then turned upward
-   * 4. Stochastic RSI %K crosses above %D from oversold (< 35)
+   * 2. Price retraced towards EMA21 / EMA50 (distance within 2.2% of EMA21)
+   * 3. RSI pulled back to 40 - 56 then turned upward
+   * 4. Stochastic RSI %K crosses above %D from oversold (< 45)
+   * 5. Volume sanity: Relative volume <= 1.35 (confirms healthy low-volume pullback, NOT panic dumping)
    */
   static evaluatePullback(
     candle: Candle,
@@ -110,8 +116,10 @@ export class StrategyDefinitions {
     const isRetracedToEma = Math.abs(ind.maDistancePercent) <= 2.2 && candle.low <= ind.ema21 * 1.008;
     const isRsiPullbackZone = ind.rsi14 >= 40 && ind.rsi14 <= 56;
     const isStochRsiCross = ind.stochRsi.k < 45 && ind.stochRsi.k > ind.stochRsi.d;
+    // Volume sanity: A healthy pullback occurs on declining or normal volume, not high-volume panic sell-offs
+    const isHealthyVolume = ind.relativeVolume <= 1.35;
 
-    const triggered = isMacroBull && isRetracedToEma && isRsiPullbackZone && isStochRsiCross;
+    const triggered = isMacroBull && isRetracedToEma && isRsiPullbackZone && isStochRsiCross && isHealthyVolume;
 
     const stopDistance = Math.max(candle.close * 0.014, ind.atr * atrMultiplier);
     const stopLoss = candle.close - stopDistance;
@@ -125,7 +133,7 @@ export class StrategyDefinitions {
       takeProfit1: Number(takeProfit1.toFixed(4)),
       takeProfit2: Number(takeProfit2.toFixed(4)),
       rationale: triggered
-        ? `Clean pullback to EMA21 (${ind.ema21.toFixed(2)}) with StochRSI bullish reversal`
+        ? `Clean pullback to EMA21 (${ind.ema21.toFixed(2)}) on calm volume (RVol ${ind.relativeVolume.toFixed(2)}x) with StochRSI reversal`
         : 'Pullback criteria not satisfied'
     };
   }
@@ -184,9 +192,9 @@ export class StrategyDefinitions {
     ind: IndicatorSet,
     atrMultiplier = 2.0
   ): StrategySignalResult {
-    const isSqueezeRelease = ind.bollingerBands.width < 6.5;
+    const isSqueezeRelease = ind.bollingerBands.width < 7.5;
     const isPricePiercingUpper = candle.close >= ind.bollingerBands.upper * 0.998;
-    const isVolumeExpansion = ind.relativeVolume >= 1.4;
+    const isVolumeExpansion = ind.relativeVolume >= 1.25;
     const isPositiveDirection = ind.plusDi > ind.minusDi;
 
     const triggered = isSqueezeRelease && isPricePiercingUpper && isVolumeExpansion && isPositiveDirection;

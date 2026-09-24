@@ -27,11 +27,12 @@ export const MarketsView: React.FC<MarketsViewProps> = ({ markets, onSelectMarke
 
   const categories = [
     { id: 'ALL', label: 'Alle Coins' },
-    { id: 'MAJOR', label: '👑 Majors (BTC/ETH/SOL/BNB)' },
-    { id: 'LAYER_1', label: '⚡ Layer-1s (SUI/AVAX/ADA/NEAR)' },
-    { id: 'AI_DATA', label: '🤖 AI & Data (TAO/FET/RENDER)' },
-    { id: 'DEFI', label: '🏦 DeFi & Oracles (LINK/AAVE/UNI)' },
-    { id: 'MEME', label: '🔥 Memes (DOGE/PEPE/SHIB)' }
+    { id: 'MAJOR', label: '👑 Majors (BTC/ETH/SOL/BNB/XRP)' },
+    { id: 'LAYER_1', label: '⚡ Layer-1s (SUI/AVAX/NEAR/INJ/SEI)' },
+    { id: 'AI_DATA', label: '🤖 AI & Data (TAO/FET/RENDER/ICP)' },
+    { id: 'DEFI', label: '🏦 DeFi & RWA (AAVE/UNI/ONDO/PENDLE/JUP)' },
+    { id: 'INFRA', label: '🔗 Infra & DA (LINK/TIA)' },
+    { id: 'MEME', label: '🔥 Memes (DOGE/PEPE/SHIB/WIF)' }
   ];
 
   const filtered = markets
@@ -72,7 +73,7 @@ export const MarketsView: React.FC<MarketsViewProps> = ({ markets, onSelectMarke
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
           <span className="font-semibold text-emerald-200">LIVE COIN FEED ACTIEF:</span>
-          <span>{markets.length || 19} top-relevante coins (Majors, Layer-1s, AI & Memes) zijn live gekoppeld aan de beurskoersen via REST & WebSocket.</span>
+          <span>{markets.length || 27} top-relevante coins (Majors, Layer-1s, AI, DeFi, RWA & Memes) zijn live gekoppeld aan de beurskoersen via REST & WebSocket.</span>
         </div>
         <div className="flex items-center gap-3 font-mono text-[11px] text-emerald-400/90">
           <span className="bg-emerald-900/50 px-2 py-0.5 rounded border border-emerald-500/30">Auto-Sync 4s</span>

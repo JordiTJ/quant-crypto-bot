@@ -98,32 +98,44 @@ export const BacktestLabView: React.FC = () => {
               onChange={(e) => setConfig({ ...config, symbol: e.target.value })}
               className="w-full px-2 py-1.5 rounded bg-slate-950 border border-slate-700 text-slate-200"
             >
-              <optgroup label="👑 Majors & L1s">
+              <optgroup label="👑 Majors (5)">
                 <option value="BTCUSDT">BTC/USDT (Bitcoin)</option>
                 <option value="ETHUSDT">ETH/USDT (Ethereum)</option>
                 <option value="SOLUSDT">SOL/USDT (Solana)</option>
-                <option value="BNBUSDT">BNB/USDT (BNB)</option>
-                <option value="XRPUSDT">XRP/USDT (XRP)</option>
-                <option value="SUIUSDT">SUI/USDT (Sui)</option>
+                <option value="BNBUSDT">BNB/USDT (BNB Chain)</option>
+                <option value="XRPUSDT">XRP/USDT (XRP Ledger)</option>
+              </optgroup>
+              <optgroup label="⚡ Layer-1s & Modular (7)">
+                <option value="SUIUSDT">SUI/USDT (Sui Network)</option>
                 <option value="AVAXUSDT">AVAX/USDT (Avalanche)</option>
                 <option value="ADAUSDT">ADA/USDT (Cardano)</option>
-                <option value="NEARUSDT">NEAR/USDT (NEAR)</option>
+                <option value="NEARUSDT">NEAR/USDT (NEAR Protocol)</option>
                 <option value="APTUSDT">APT/USDT (Aptos)</option>
+                <option value="INJUSDT">INJ/USDT (Injective)</option>
+                <option value="SEIUSDT">SEI/USDT (Sei Network)</option>
               </optgroup>
-              <optgroup label="🤖 AI & Data">
+              <optgroup label="🤖 AI & Decentralized Compute (4)">
                 <option value="TAOUSDT">TAO/USDT (Bittensor)</option>
                 <option value="RENDERUSDT">RENDER/USDT (Render)</option>
                 <option value="FETUSDT">FET/USDT (ASI FET)</option>
+                <option value="ICPUSDT">ICP/USDT (Internet Computer)</option>
               </optgroup>
-              <optgroup label="🏦 DeFi & Infra">
-                <option value="LINKUSDT">LINK/USDT (Chainlink)</option>
-                <option value="AAVEUSDT">AAVE/USDT (Aave)</option>
-                <option value="UNIUSDT">UNI/USDT (Uniswap)</option>
+              <optgroup label="🏦 DeFi, Yield & RWA (6)">
+                <option value="LINKUSDT">LINK/USDT (Chainlink Oracle)</option>
+                <option value="AAVEUSDT">AAVE/USDT (Aave Protocol)</option>
+                <option value="UNIUSDT">UNI/USDT (Uniswap DEX)</option>
+                <option value="ONDOUSDT">ONDO/USDT (Ondo Finance RWA)</option>
+                <option value="PENDLEUSDT">PENDLE/USDT (Pendle Yield)</option>
+                <option value="JUPUSDT">JUP/USDT (Jupiter Exchange)</option>
               </optgroup>
-              <optgroup label="🔥 Memes">
+              <optgroup label="🔗 Modular Infrastructure (1)">
+                <option value="TIAUSDT">TIA/USDT (Celestia DA)</option>
+              </optgroup>
+              <optgroup label="🔥 High-Volume Memecoins (4)">
                 <option value="DOGEUSDT">DOGE/USDT (Dogecoin)</option>
                 <option value="PEPEUSDT">PEPE/USDT (Pepe)</option>
                 <option value="SHIBUSDT">SHIB/USDT (Shiba Inu)</option>
+                <option value="WIFUSDT">WIF/USDT (dogwifhat)</option>
               </optgroup>
             </select>
           </div>

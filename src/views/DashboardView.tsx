@@ -186,13 +186,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </button>
                 ))}
 
-                {/* Dropdown for the rest of the 19 coins */}
+                {/* Dropdown for all 27 coins */}
                 <select
                   value={selectedSymbol}
                   onChange={(e) => setSelectedSymbol(e.target.value)}
                   className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="" disabled>Alle 19 Coins...</option>
+                  <option value="" disabled>Alle 27 Coins...</option>
                   {(markets && markets.length > 0 ? markets : [
                     { symbol: 'BTCUSDT', coinName: 'Bitcoin' },
                     { symbol: 'ETHUSDT', coinName: 'Ethereum' },
@@ -204,15 +204,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     { symbol: 'ADAUSDT', coinName: 'Cardano' },
                     { symbol: 'NEARUSDT', coinName: 'NEAR' },
                     { symbol: 'APTUSDT', coinName: 'Aptos' },
+                    { symbol: 'INJUSDT', coinName: 'Injective' },
+                    { symbol: 'SEIUSDT', coinName: 'Sei' },
                     { symbol: 'RENDERUSDT', coinName: 'Render' },
                     { symbol: 'FETUSDT', coinName: 'Artificial Superintelligence' },
                     { symbol: 'TAOUSDT', coinName: 'Bittensor' },
+                    { symbol: 'ICPUSDT', coinName: 'Internet Computer' },
                     { symbol: 'LINKUSDT', coinName: 'Chainlink' },
                     { symbol: 'AAVEUSDT', coinName: 'Aave' },
                     { symbol: 'UNIUSDT', coinName: 'Uniswap' },
+                    { symbol: 'ONDOUSDT', coinName: 'Ondo RWA' },
+                    { symbol: 'PENDLEUSDT', coinName: 'Pendle' },
+                    { symbol: 'JUPUSDT', coinName: 'Jupiter' },
+                    { symbol: 'TIAUSDT', coinName: 'Celestia' },
                     { symbol: 'DOGEUSDT', coinName: 'Dogecoin' },
                     { symbol: 'PEPEUSDT', coinName: 'Pepe' },
-                    { symbol: 'SHIBUSDT', coinName: 'Shiba Inu' }
+                    { symbol: 'SHIBUSDT', coinName: 'Shiba Inu' },
+                    { symbol: 'WIFUSDT', coinName: 'dogwifhat' }
                   ]).map(m => (
                     <option key={m.symbol} value={m.symbol}>
                       {m.symbol.replace('USDT', '')} {m.coinName ? `(${m.coinName})` : ''}
