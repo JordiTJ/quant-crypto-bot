@@ -116,16 +116,33 @@ app.get('/api/status', async (req, res) => {
     const todayTrades = trades.filter(t => t.exitTimestamp >= todayStart);
     const todayRealizedPnl = todayTrades.reduce((acc, t) => acc + t.netPnl, 0);
     const totalUnrealizedPnl = positions.reduce((acc, p) => acc + p.unrealizedPnl, 0);
+    const totalRealizedPnl = trades.reduce((acc, t) => acc + t.netPnl, 0);
+
+    // Calculate baseline equity for return percentage
+    const isLive = status.mode === 'LIVE';
+    const totalUsd = isLive 
+      ? Number((status.accountEquityUsd + totalUnrealizedPnl).toFixed(2))
+      : status.accountEquityUsd;
+
+    // Keep risk engine fully in sync with current true equity
+    globalRiskEngine.setEquity(totalUsd);
+
+    const todayPnlUsd = Number((todayRealizedPnl + totalUnrealizedPnl).toFixed(2));
+    const startingCapital = isLive ? (totalUsd - todayPnlUsd || 10000) : 10000;
+    const todayPnlPercent = Number(((todayPnlUsd / startingCapital) * 100).toFixed(2));
 
     res.json({
       status: 'ok',
-      exchange: status,
+      exchange: {
+        ...status,
+        accountEquityUsd: totalUsd
+      },
       risk: riskConfig,
       equity: {
-        totalUsd: Number((status.accountEquityUsd + totalUnrealizedPnl).toFixed(2)),
+        totalUsd,
         availableUsd: status.availableBalanceUsd,
-        todayPnlUsd: Number((todayRealizedPnl + totalUnrealizedPnl).toFixed(2)),
-        todayPnlPercent: Number((((todayRealizedPnl + totalUnrealizedPnl) / status.accountEquityUsd) * 100).toFixed(2)),
+        todayPnlUsd,
+        todayPnlPercent,
         openPositionsCount: positions.length,
         maxOpenPositions: riskConfig.maxOpenPositions
       },

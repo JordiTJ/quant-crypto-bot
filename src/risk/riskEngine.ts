@@ -52,6 +52,10 @@ export class RiskEngine {
 
   recordTradeResult(netPnl: number): void {
     this.dailyRealizedPnlUsd += netPnl;
+    this.currentEquityUsd = Number((this.currentEquityUsd + netPnl).toFixed(2));
+    if (this.currentEquityUsd > this.peakEquityUsd) {
+      this.peakEquityUsd = this.currentEquityUsd;
+    }
     if (netPnl < 0) {
       this.consecutiveLosses++;
       if (this.consecutiveLosses >= this.config.consecutiveLossCooldownCount) {

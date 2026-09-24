@@ -128,15 +128,16 @@ export class ExchangeManager {
       pos.unrealizedPnlPercent = Number(((diff / pos.entryPrice) * 100).toFixed(2));
 
       // Update trailing stop if in profit
+      const decimals = livePrice >= 100 ? 2 : livePrice >= 1 ? 4 : 6;
       if (pos.side === 'LONG' && pos.trailingStopActive && pos.trailingStopPrice) {
         const potentialTrailing = livePrice * 0.985;
         if (potentialTrailing > pos.trailingStopPrice && livePrice > pos.entryPrice) {
-          pos.trailingStopPrice = Number(potentialTrailing.toFixed(2));
+          pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
         }
       } else if (pos.side === 'SHORT' && pos.trailingStopActive && pos.trailingStopPrice) {
         const potentialTrailing = livePrice * 1.015;
         if (potentialTrailing < pos.trailingStopPrice && livePrice < pos.entryPrice) {
-          pos.trailingStopPrice = Number(potentialTrailing.toFixed(2));
+          pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
         }
       }
 
@@ -181,8 +182,9 @@ export class ExchangeManager {
       return { success: false, message: `Risicocheck geweigerd: ${check.reason}` };
     }
 
+    const currentEquity = this.mode === 'LIVE' ? 10000 : this.getPaperEquity().totalEquityUsd;
     const sizing = riskEngine.calculatePositionSize(
-      10000,
+      Math.max(100, currentEquity),
       signal.currentPrice,
       signal.stopLoss,
       signal.symbol
@@ -193,9 +195,10 @@ export class ExchangeManager {
     }
 
     const side: 'LONG' | 'SHORT' = (signal.side || signal.direction || (signal.action === 'SELL' ? 'SHORT' : 'LONG')) as 'LONG' | 'SHORT';
+    const initialDecimals = signal.currentPrice >= 100 ? 2 : signal.currentPrice >= 1 ? 4 : 6;
     const trailingStopPrice = side === 'LONG' 
-      ? Number((signal.currentPrice * 0.985).toFixed(2)) 
-      : Number((signal.currentPrice * 1.015).toFixed(2));
+      ? Number((signal.currentPrice * 0.985).toFixed(initialDecimals)) 
+      : Number((signal.currentPrice * 1.015).toFixed(initialDecimals));
 
     const newPos: Position = {
       id: `pos_${signal.symbol.toLowerCase()}_${Date.now()}`,
@@ -325,9 +328,31 @@ export class ExchangeManager {
     }
   }
 
+  getPaperEquity(): { totalEquityUsd: number; availableBalanceUsd: number; unrealizedPnlUsd: number; realizedPnlUsd: number } {
+    const INITIAL_CAPITAL = 10000.0;
+    const realizedPnlUsd = this.tradeHistory.reduce((acc, t) => acc + t.netPnl, 0);
+    const unrealizedPnlUsd = Array.from(this.openPositions.values()).reduce((acc, p) => acc + p.unrealizedPnl, 0);
+    const usedMarginUsd = Array.from(this.openPositions.values()).reduce((acc, p) => acc + p.valueUsd, 0);
+
+    const totalEquityUsd = Number((INITIAL_CAPITAL + realizedPnlUsd + unrealizedPnlUsd).toFixed(2));
+    const availableBalanceUsd = Number(Math.max(0, INITIAL_CAPITAL + realizedPnlUsd - usedMarginUsd).toFixed(2));
+
+    return {
+      totalEquityUsd,
+      availableBalanceUsd,
+      unrealizedPnlUsd: Number(unrealizedPnlUsd.toFixed(2)),
+      realizedPnlUsd: Number(realizedPnlUsd.toFixed(2))
+    };
+  }
+
   async getStatus(): Promise<ExchangeConfig> {
     const adapter = this.getActiveAdapter();
     const balance = await adapter.getAccountBalance();
+    const paper = this.getPaperEquity();
+
+    const isLive = this.mode === 'LIVE';
+    const totalEquityUsd = isLive ? balance.totalEquityUsd : paper.totalEquityUsd;
+    const availableBalanceUsd = isLive ? balance.availableBalanceUsd : paper.availableBalanceUsd;
 
     return {
       provider: this.activeExchangeId as any,
@@ -338,8 +363,8 @@ export class ExchangeManager {
       hasPassphrase: false,
       isConnected: true,
       pingLatencyMs: 42,
-      accountEquityUsd: balance.totalEquityUsd,
-      availableBalanceUsd: balance.availableBalanceUsd,
+      accountEquityUsd: totalEquityUsd,
+      availableBalanceUsd: availableBalanceUsd,
       permissions: {
         canRead: true,
         canTrade: this.liveTradingEnabled,

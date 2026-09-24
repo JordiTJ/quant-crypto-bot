@@ -20,7 +20,7 @@ import { ExchangeConfig, Position, TradingSignal, TradeRecord, Timeframe, Market
 
 interface DashboardViewProps {
   exchangeStatus: ExchangeConfig | null;
-  equityData: { totalUsd: number; todayPnlUsd: number; todayPnlPercent: number; openPositionsCount: number; maxOpenPositions: number } | null;
+  equityData: { totalUsd: number; availableUsd?: number; todayPnlUsd: number; todayPnlPercent: number; openPositionsCount: number; maxOpenPositions: number } | null;
   positions: Position[];
   signals: TradingSignal[];
   recentTrades: TradeRecord[];
@@ -106,12 +106,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="font-mono text-2xl font-bold text-slate-100">
             ${equityData ? equityData.totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '10,000.00'}
           </div>
-          <div className="flex items-center gap-1.5 mt-2 text-xs">
+          <div className="flex items-center justify-between mt-2 text-xs">
             <span className={equityData && equityData.todayPnlUsd >= 0 ? 'text-emerald-400 flex items-center font-medium' : 'text-rose-400 flex items-center font-medium'}>
               {equityData && equityData.todayPnlUsd >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
               {equityData ? `${equityData.todayPnlUsd >= 0 ? '+' : ''}$${equityData.todayPnlUsd.toFixed(2)} (${equityData.todayPnlPercent}%)` : '+$0.00'}
+              <span className="text-slate-500 text-[11px] ml-1">today</span>
             </span>
-            <span className="text-slate-500 text-[11px]">today</span>
+            {equityData?.availableUsd !== undefined && (
+              <span className="text-slate-400 font-mono text-[11px]">
+                Free: <span className="text-slate-200">${equityData.availableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -126,9 +131,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <div className="mt-2 text-xs text-slate-400 flex items-center justify-between">
             <span>Unrealized P&L:</span>
-            <span className="font-mono font-semibold text-emerald-400">
-              +${positions.reduce((acc, p) => acc + p.unrealizedPnl, 0).toFixed(2)}
-            </span>
+            {(() => {
+              const unPnl = positions.reduce((acc, p) => acc + p.unrealizedPnl, 0);
+              return (
+                <span className={`font-mono font-semibold ${unPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {unPnl >= 0 ? '+' : ''}${unPnl.toFixed(2)}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
