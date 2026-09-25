@@ -148,6 +148,7 @@ app.get('/api/status', async (req, res) => {
       },
       killSwitchActive: globalExchangeManager.isEmergencyKillSwitchActive(),
       autoTradingActive: globalExchangeManager.isAutoTradingEnabled(),
+      riskStatus: globalRiskEngine.getRiskStatus(),
       serverTimestamp: Date.now()
     });
   } catch (err: any) {
@@ -437,14 +438,36 @@ app.post('/api/exchange/kill-switch', requireAuth, (req, res) => {
 
 // 12. Risk Config
 app.get('/api/risk/config', (req, res) => {
-  res.json({ config: globalRiskEngine.getConfig() });
+  res.json({ 
+    config: globalRiskEngine.getConfig(),
+    riskStatus: globalRiskEngine.getRiskStatus()
+  });
 });
 
 app.post('/api/risk/config', requireAuth, (req, res) => {
   try {
     globalRiskEngine.updateConfig(req.body);
     addLog('INFO', 'RISK', 'Risk limits updated via configuration dashboard.');
-    res.json({ success: true, config: globalRiskEngine.getConfig() });
+    res.json({ 
+      success: true, 
+      config: globalRiskEngine.getConfig(),
+      riskStatus: globalRiskEngine.getRiskStatus()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12a. Reset Consecutive Losses Cooldown
+app.post('/api/risk/cooldown/reset', requireAuth, (req, res) => {
+  try {
+    globalRiskEngine.resetCooldown();
+    addLog('INFO', 'RISK', 'Consecutive loss cooldown handmatig gereset door gebruiker.');
+    res.json({ 
+      success: true, 
+      message: 'Cooldown succesvol gereset. Bot kan direct weer orders plaatsen.',
+      riskStatus: globalRiskEngine.getRiskStatus()
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

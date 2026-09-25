@@ -12,11 +12,12 @@ import {
   Clock,
   Zap,
   ChevronRight,
-  Radio
+  Radio,
+  RotateCcw
 } from 'lucide-react';
 import { MarketDataEngine } from '../data/marketData';
 import { InteractiveChart } from '../components/InteractiveChart';
-import { ExchangeConfig, Position, TradingSignal, TradeRecord, Timeframe, MarketAsset, Candle } from '../types';
+import { ExchangeConfig, Position, TradingSignal, TradeRecord, Timeframe, MarketAsset, Candle, RiskStatus } from '../types';
 
 interface DashboardViewProps {
   exchangeStatus: ExchangeConfig | null;
@@ -25,6 +26,8 @@ interface DashboardViewProps {
   signals: TradingSignal[];
   recentTrades: TradeRecord[];
   killSwitchActive: boolean;
+  riskStatus?: RiskStatus | null;
+  onResetCooldown?: () => void;
   markets?: MarketAsset[];
   onClosePosition: (id: string) => void;
   onNavigate: (tab: string) => void;
@@ -37,6 +40,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   signals,
   recentTrades,
   killSwitchActive,
+  riskStatus,
+  onResetCooldown,
   markets,
   onClosePosition,
   onNavigate
@@ -92,6 +97,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           >
             Review Circuits
           </button>
+        </div>
+      )}
+
+      {/* Consecutive Loss Cooldown Banner if Active */}
+      {riskStatus?.cooldownActive && (
+        <div className="bg-amber-950/80 border border-amber-500/80 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 shadow-md">
+          <div className="flex items-center gap-3">
+            <Clock className="w-7 h-7 text-amber-400 animate-spin flex-shrink-0" style={{ animationDuration: '6s' }} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm text-white">CONSECUTIVE LOSS COOLDOWN ACTIEF</h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  Nog {riskStatus.remainingMinutes} min
+                </span>
+              </div>
+              <p className="text-xs text-amber-300/90 mt-0.5">
+                De bot pauzeert nieuwe orders na {riskStatus.consecutiveLosses} opeenvolgende verliesgevende trades ter bescherming tegen ongunstige marktomstandigheden.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {onResetCooldown && (
+              <button
+                onClick={onResetCooldown}
+                className="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold font-mono text-xs transition shadow flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset Cooldown Nu
+              </button>
+            )}
+            <button
+              onClick={() => onNavigate('risk')}
+              className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs border border-slate-700 transition"
+            >
+              Aanpassen in Risk
+            </button>
+          </div>
         </div>
       )}
 

@@ -38,6 +38,25 @@ export class RiskEngine {
     return { ...this.config };
   }
 
+  getRiskStatus() {
+    const cooldownActive = Date.now() < this.cooldownUntilTimestamp;
+    const remainingMinutes = cooldownActive ? Math.max(1, Math.ceil((this.cooldownUntilTimestamp - Date.now()) / 60000)) : 0;
+    return {
+      consecutiveLosses: this.consecutiveLosses,
+      consecutiveLossCooldownCount: this.config.consecutiveLossCooldownCount,
+      cooldownHours: this.config.cooldownHours,
+      cooldownActive,
+      cooldownUntilTimestamp: this.cooldownUntilTimestamp,
+      remainingMinutes
+    };
+  }
+
+  resetCooldown(): void {
+    this.consecutiveLosses = 0;
+    this.cooldownUntilTimestamp = 0;
+    console.log('[RiskEngine] Consecutive loss cooldown manually reset by user.');
+  }
+
   updateConfig(updates: Partial<RiskConfig>): void {
     this.config = { ...this.config, ...updates };
     globalStorageManager.updateState({ riskConfig: this.config }, true);

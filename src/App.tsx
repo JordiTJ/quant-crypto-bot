@@ -17,6 +17,7 @@ import {
   MarketAsset, 
   Position, 
   RiskConfig, 
+  RiskStatus,
   SystemLog, 
   TradeRecord, 
   TradingMode, 
@@ -54,6 +55,7 @@ export default function App() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [trades, setTrades] = useState<TradeRecord[]>([]);
   const [riskConfig, setRiskConfig] = useState<RiskConfig | null>(null);
+  const [riskStatus, setRiskStatus] = useState<RiskStatus | null>(null);
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [sessionToken, setSessionToken] = useState<string | null>(() => {
@@ -97,6 +99,9 @@ export default function App() {
           setAutoTradingActive(statusData.autoTradingActive);
         }
         setRiskConfig(statusData.risk);
+        if (statusData.riskStatus) {
+          setRiskStatus(statusData.riskStatus);
+        }
       }
 
       // 2. Markets
@@ -257,10 +262,34 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setRiskConfig(data.config);
+        if (data.riskStatus) setRiskStatus(data.riskStatus);
         fetchSystemState();
       }
     } catch (err) {
       console.error('Error updating risk config:', err);
+    }
+  };
+
+  const handleResetCooldown = async () => {
+    try {
+      const res = await fetch('/api/risk/cooldown/reset', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.status === 401) {
+        alert('PIN vereist om de cooldown te resetten. Ga naar het tabblad Notificaties & Beveiliging.');
+        setActiveTab('settings');
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.riskStatus) {
+          setRiskStatus(data.riskStatus);
+        }
+        fetchSystemState();
+      }
+    } catch (err) {
+      console.error('Error resetting cooldown:', err);
     }
   };
 
@@ -362,6 +391,8 @@ export default function App() {
             signals={signals}
             recentTrades={trades}
             killSwitchActive={killSwitchActive}
+            riskStatus={riskStatus}
+            onResetCooldown={handleResetCooldown}
             markets={markets}
             onClosePosition={handleClosePosition}
             onNavigate={setActiveTab}
@@ -417,7 +448,9 @@ export default function App() {
         {activeTab === 'risk' && riskConfig && (
           <RiskSettingsView
             riskConfig={riskConfig}
+            riskStatus={riskStatus}
             onUpdateRiskConfig={handleUpdateRiskConfig}
+            onResetCooldown={handleResetCooldown}
             killSwitchActive={killSwitchActive}
             onToggleKillSwitch={handleToggleKillSwitch}
           />

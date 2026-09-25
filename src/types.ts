@@ -320,6 +320,15 @@ export interface RiskConfig {
   emergencyKillSwitchActive: boolean;
 }
 
+export interface RiskStatus {
+  consecutiveLosses: number;
+  consecutiveLossCooldownCount: number;
+  cooldownHours: number;
+  cooldownActive: boolean;
+  cooldownUntilTimestamp: number;
+  remainingMinutes: number;
+}
+
 export interface ExchangeConfig {
   provider: 'phemex' | 'binance' | 'bybit' | 'okx';
   mode: TradingMode;
