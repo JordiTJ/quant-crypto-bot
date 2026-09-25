@@ -474,6 +474,53 @@ app.post('/api/risk/cooldown/reset', requireAuth, (req, res) => {
   }
 });
 
+// 12a-2. Reset Drawdown Counter & Recalibrate Peak Equity
+app.post('/api/risk/drawdown/reset', requireAuth, (req, res) => {
+  try {
+    const currentPaper = globalExchangeManager.getPaperEquity();
+    globalRiskEngine.resetDrawdown(currentPaper.totalEquityUsd);
+    addLog('INFO', 'RISK', `Max Drawdown handmatig gereset. Piekkapitaal opnieuw gecalibreerd naar $${currentPaper.totalEquityUsd.toLocaleString()}.`);
+    res.json({ 
+      success: true, 
+      message: 'Max Drawdown teller succesvol gereset. Huidig vermogen is als nieuwe piek ingesteld.',
+      riskStatus: globalRiskEngine.getRiskStatus()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12a-3. Reset Daily Loss Counter
+app.post('/api/risk/daily-loss/reset', requireAuth, (req, res) => {
+  try {
+    globalRiskEngine.resetDailyCounters();
+    addLog('INFO', 'RISK', 'Dagverlies teller handmatig gereset door gebruiker.');
+    res.json({ 
+      success: true, 
+      message: 'Dagverlies teller succesvol gereset.',
+      riskStatus: globalRiskEngine.getRiskStatus()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12a-4. Reset All Circuit Breakers / Blocks
+app.post('/api/risk/reset-all', requireAuth, (req, res) => {
+  try {
+    const currentPaper = globalExchangeManager.getPaperEquity();
+    globalRiskEngine.resetAllCircuitBreakers(currentPaper.totalEquityUsd);
+    addLog('INFO', 'RISK', 'Alle actieve risicoblokkades, drawdown tellers en cooldowns gereset door gebruiker.');
+    res.json({ 
+      success: true, 
+      message: 'Alle risicoblokkades en circuit breakers succesvol opgeheven!',
+      riskStatus: globalRiskEngine.getRiskStatus()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 12b. Slack Webhook Notifications
 app.get('/api/slack/config', (req, res) => {
   res.json({ config: globalSlackNotifier.getConfig() });
@@ -621,6 +668,10 @@ async function runAutonomousBackgroundEngine() {
       globalRiskEngine.recordTradeResult(ct.netPnl);
       addLog('TRADE', 'EXCHANGE', `[24/7 ACHTERGROND EXIT] ${ct.symbol} bereikte ${ct.exitReason} @ $${ct.exitPrice}. Netto P&L: $${ct.netPnl} (${ct.netPnlPercent}%, ${ct.returnR}R)`);
     }
+
+    // Continuously sync actual equity state with risk engine
+    const currentPaper = globalExchangeManager.getPaperEquity();
+    globalRiskEngine.syncEquityWithExchange(currentPaper.totalEquityUsd);
 
     // 2. 24/7 Autonomous Auto-Trading: If Auto-Bot toggle is enabled, scan and execute qualified triggers
     if (globalExchangeManager.isAutoTradingEnabled() && !globalExchangeManager.isEmergencyKillSwitchActive()) {

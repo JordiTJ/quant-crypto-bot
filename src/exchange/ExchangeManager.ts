@@ -194,12 +194,15 @@ export class ExchangeManager {
       return { success: false, message: `Er is al een actieve positie geopend voor ${signal.symbol}.` };
     }
 
+    // Sync actual current portfolio equity with risk engine
+    const currentEquity = this.mode === 'LIVE' ? 10000 : this.getPaperEquity().totalEquityUsd;
+    riskEngine.syncEquityWithExchange(currentEquity);
+
     const check = riskEngine.canOpenNewPosition(this.getOpenPositions(), signal.marketRegime || 'NEUTRAL', signal.symbol);
     if (!check.allowed) {
       return { success: false, message: `Risicocheck geweigerd: ${check.reason}` };
     }
 
-    const currentEquity = this.mode === 'LIVE' ? 10000 : this.getPaperEquity().totalEquityUsd;
     const sizing = riskEngine.calculatePositionSize(
       Math.max(100, currentEquity),
       signal.currentPrice,

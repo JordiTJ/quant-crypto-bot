@@ -293,6 +293,69 @@ export default function App() {
     }
   };
 
+  const handleResetDrawdown = async () => {
+    try {
+      const res = await fetch('/api/risk/drawdown/reset', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.status === 401) {
+        alert('PIN vereist om drawdown te resetten.');
+        setActiveTab('settings');
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.riskStatus) setRiskStatus(data.riskStatus);
+        fetchSystemState();
+      }
+    } catch (err) {
+      console.error('Error resetting drawdown:', err);
+    }
+  };
+
+  const handleResetDailyLoss = async () => {
+    try {
+      const res = await fetch('/api/risk/daily-loss/reset', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.status === 401) {
+        alert('PIN vereist om dagverlies te resetten.');
+        setActiveTab('settings');
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.riskStatus) setRiskStatus(data.riskStatus);
+        fetchSystemState();
+      }
+    } catch (err) {
+      console.error('Error resetting daily loss:', err);
+    }
+  };
+
+  const handleResetAllCircuitBreakers = async () => {
+    try {
+      const res = await fetch('/api/risk/reset-all', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (res.status === 401) {
+        alert('PIN vereist om circuit breakers te resetten.');
+        setActiveTab('settings');
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.riskStatus) setRiskStatus(data.riskStatus);
+        fetchSystemState();
+      }
+    } catch (err) {
+      console.error('Error resetting all circuit breakers:', err);
+    }
+  };
+
   const handleToggleAutoTrading = async () => {
     const nextState = !autoTradingActive;
     setAutoTradingActive(nextState); // Optimistic UI update immediately
@@ -451,6 +514,9 @@ export default function App() {
             riskStatus={riskStatus}
             onUpdateRiskConfig={handleUpdateRiskConfig}
             onResetCooldown={handleResetCooldown}
+            onResetDrawdown={handleResetDrawdown}
+            onResetDailyLoss={handleResetDailyLoss}
+            onResetAllCircuitBreakers={handleResetAllCircuitBreakers}
             killSwitchActive={killSwitchActive}
             onToggleKillSwitch={handleToggleKillSwitch}
           />

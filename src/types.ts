@@ -318,6 +318,12 @@ export interface RiskConfig {
   consecutiveLossCooldownCount: number;
   cooldownHours: number;
   emergencyKillSwitchActive: boolean;
+  // Circuit breaker bypass toggles (allows user to temporarily relax/override specific blocks)
+  bypassDailyLossLimit?: boolean;
+  bypassDrawdownLimit?: boolean;
+  bypassBtcCorrelationGuard?: boolean;
+  bypassCorrelatedPositionsLimit?: boolean;
+  bypassMaxExposureCap?: boolean;
 }
 
 export interface RiskStatus {
@@ -327,6 +333,22 @@ export interface RiskStatus {
   cooldownActive: boolean;
   cooldownUntilTimestamp: number;
   remainingMinutes: number;
+  peakEquityUsd: number;
+  currentEquityUsd: number;
+  currentDrawdownPercent: number;
+  dailyRealizedPnlUsd: number;
+  dailyLossPercent: number;
+  isDrawdownHalted: boolean;
+  isDrawdownPaused: boolean;
+  isDailyLossHalted: boolean;
+  activeBlocks: {
+    type: 'KILL_SWITCH' | 'COOLDOWN' | 'DAILY_LOSS' | 'DRAWDOWN_EMERGENCY' | 'DRAWDOWN_PAUSE' | 'MAX_POSITIONS' | 'EXPOSURE_CAP' | 'BTC_CORRELATION' | 'CORRELATION_LIMIT';
+    title: string;
+    description: string;
+    canReset?: boolean;
+    canBypass?: boolean;
+    bypassKey?: keyof RiskConfig;
+  }[];
 }
 
 export interface ExchangeConfig {

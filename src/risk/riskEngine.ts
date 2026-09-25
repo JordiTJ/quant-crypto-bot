@@ -4,7 +4,7 @@
  * NEVER MARTINGALE. NEVER UNLIMITED AVERAGING DOWN.
  */
 
-import { Position, RiskConfig, MarketRegime } from '../types';
+import { Position, RiskConfig, RiskStatus, MarketRegime } from '../types';
 import { globalStorageManager } from '../storage/storageManager';
 
 export class RiskEngine {
@@ -30,6 +30,11 @@ export class RiskEngine {
       consecutiveLossCooldownCount: 3,
       cooldownHours: 4,
       emergencyKillSwitchActive: false,
+      bypassDailyLossLimit: false,
+      bypassDrawdownLimit: false,
+      bypassBtcCorrelationGuard: false,
+      bypassCorrelatedPositionsLimit: false,
+      bypassMaxExposureCap: false,
       ...savedConfig
     };
   }
@@ -41,13 +46,86 @@ export class RiskEngine {
   getRiskStatus() {
     const cooldownActive = Date.now() < this.cooldownUntilTimestamp;
     const remainingMinutes = cooldownActive ? Math.max(1, Math.ceil((this.cooldownUntilTimestamp - Date.now()) / 60000)) : 0;
+    
+    // Drawdown calculation with division-by-zero safeguard
+    const safePeak = Math.max(1, this.peakEquityUsd);
+    const safeCurrent = Math.max(0, this.currentEquityUsd);
+    const currentDrawdownPercent = safeCurrent >= safePeak ? 0 : Number((((safePeak - safeCurrent) / safePeak) * 100).toFixed(2));
+    
+    const dailyLossPercent = safePeak > 0 ? Number(((Math.abs(Math.min(0, this.dailyRealizedPnlUsd)) / safePeak) * 100).toFixed(2)) : 0;
+
+    const isDrawdownHalted = !this.config.bypassDrawdownLimit && currentDrawdownPercent >= this.config.maxDrawdownEmergencyPercent;
+    const isDrawdownPaused = !this.config.bypassDrawdownLimit && currentDrawdownPercent >= this.config.maxDrawdownPausePercent;
+    const isDailyLossHalted = !this.config.bypassDailyLossLimit && dailyLossPercent >= this.config.maxDailyLossPercent;
+
+    // Build active blocks list
+    const activeBlocks: RiskStatus['activeBlocks'] = [];
+
+    if (this.config.emergencyKillSwitchActive) {
+      activeBlocks.push({
+        type: 'KILL_SWITCH',
+        title: 'Master Emergency Kill Switch Actief',
+        description: 'Alle orderplaatsingen zijn direct handmatig geblokkeerd.',
+        canReset: true
+      });
+    }
+
+    if (cooldownActive) {
+      activeBlocks.push({
+        type: 'COOLDOWN',
+        title: 'Consecutive Loss Cooldown Actief',
+        description: `Pauze ingesteld wegens ${this.consecutiveLosses} opeenvolgende verliezen (${remainingMinutes} min resterend).`,
+        canReset: true
+      });
+    }
+
+    if (isDrawdownHalted) {
+      activeBlocks.push({
+        type: 'DRAWDOWN_EMERGENCY',
+        title: 'Max Drawdown Noodstop Bereikt',
+        description: `Drawdown (${currentDrawdownPercent}%) overschrijdt noodlimiet (${this.config.maxDrawdownEmergencyPercent}%). Piek: $${this.peakEquityUsd.toLocaleString()}, Huidig: $${this.currentEquityUsd.toLocaleString()}.`,
+        canReset: true,
+        canBypass: true,
+        bypassKey: 'bypassDrawdownLimit'
+      });
+    } else if (isDrawdownPaused) {
+      activeBlocks.push({
+        type: 'DRAWDOWN_PAUSE',
+        title: 'Max Drawdown Pauzedrempel Overschreden',
+        description: `Drawdown (${currentDrawdownPercent}%) overschrijdt waarschuwingsdrempel (${this.config.maxDrawdownPausePercent}%).`,
+        canReset: true,
+        canBypass: true,
+        bypassKey: 'bypassDrawdownLimit'
+      });
+    }
+
+    if (isDailyLossHalted) {
+      activeBlocks.push({
+        type: 'DAILY_LOSS',
+        title: 'Max Daily Loss Limiet Bereikt',
+        description: `Dagverlies (-$${Math.abs(this.dailyRealizedPnlUsd).toFixed(2)}, ${dailyLossPercent}%) bereikte de daglimiet van ${this.config.maxDailyLossPercent}%.`,
+        canReset: true,
+        canBypass: true,
+        bypassKey: 'bypassDailyLossLimit'
+      });
+    }
+
     return {
       consecutiveLosses: this.consecutiveLosses,
       consecutiveLossCooldownCount: this.config.consecutiveLossCooldownCount,
       cooldownHours: this.config.cooldownHours,
       cooldownActive,
       cooldownUntilTimestamp: this.cooldownUntilTimestamp,
-      remainingMinutes
+      remainingMinutes,
+      peakEquityUsd: Number(this.peakEquityUsd.toFixed(2)),
+      currentEquityUsd: Number(this.currentEquityUsd.toFixed(2)),
+      currentDrawdownPercent,
+      dailyRealizedPnlUsd: Number(this.dailyRealizedPnlUsd.toFixed(2)),
+      dailyLossPercent,
+      isDrawdownHalted,
+      isDrawdownPaused,
+      isDailyLossHalted,
+      activeBlocks
     };
   }
 
@@ -57,14 +135,50 @@ export class RiskEngine {
     console.log('[RiskEngine] Consecutive loss cooldown manually reset by user.');
   }
 
+  resetDrawdown(newEquity?: number): void {
+    if (typeof newEquity === 'number' && newEquity > 0) {
+      this.currentEquityUsd = newEquity;
+      this.peakEquityUsd = newEquity;
+    } else {
+      // Calibrate peak to current equity
+      this.peakEquityUsd = Math.max(100, this.currentEquityUsd);
+    }
+    console.log(`[RiskEngine] Drawdown counters reset. Peak calibrated to $${this.peakEquityUsd}.`);
+  }
+
+  resetDailyCounters(): void {
+    this.dailyRealizedPnlUsd = 0;
+    console.log('[RiskEngine] Daily loss counters reset.');
+  }
+
+  resetAllCircuitBreakers(currentEquity?: number): void {
+    this.consecutiveLosses = 0;
+    this.cooldownUntilTimestamp = 0;
+    this.dailyRealizedPnlUsd = 0;
+    this.config.emergencyKillSwitchActive = false;
+    this.resetDrawdown(currentEquity);
+    globalStorageManager.updateState({ riskConfig: this.config }, true);
+    console.log('[RiskEngine] Alle risicoblokkades en circuit breakers gereset door gebruiker.');
+  }
+
   updateConfig(updates: Partial<RiskConfig>): void {
     this.config = { ...this.config, ...updates };
     globalStorageManager.updateState({ riskConfig: this.config }, true);
   }
 
   setEquity(equity: number): void {
+    if (equity <= 0) return;
     this.currentEquityUsd = equity;
-    if (equity > this.peakEquityUsd) {
+    if (equity > this.peakEquityUsd || this.peakEquityUsd <= 0) {
+      this.peakEquityUsd = equity;
+    }
+  }
+
+  syncEquityWithExchange(equity: number): void {
+    if (equity <= 0) return;
+    this.currentEquityUsd = equity;
+    // If peak was uninitialized or below, set it
+    if (this.peakEquityUsd <= 0 || equity > this.peakEquityUsd) {
       this.peakEquityUsd = equity;
     }
   }
@@ -86,10 +200,6 @@ export class RiskEngine {
     }
   }
 
-  resetDailyCounters(): void {
-    this.dailyRealizedPnlUsd = 0;
-  }
-
   /**
    * Check if any circuit breaker prohibits new entries
    */
@@ -104,18 +214,26 @@ export class RiskEngine {
     }
 
     // 1. Max Daily Loss check
-    const dailyLossPercent = (Math.abs(Math.min(0, this.dailyRealizedPnlUsd)) / this.peakEquityUsd) * 100;
-    if (dailyLossPercent >= this.config.maxDailyLossPercent) {
-      return { allowed: false, reason: `DAILY_LOSS_LIMIT_REACHED: Daily loss (-${dailyLossPercent.toFixed(2)}%) reached limit of ${this.config.maxDailyLossPercent}%.` };
+    if (!this.config.bypassDailyLossLimit) {
+      const safePeak = Math.max(1, this.peakEquityUsd);
+      const dailyLossPercent = (Math.abs(Math.min(0, this.dailyRealizedPnlUsd)) / safePeak) * 100;
+      if (dailyLossPercent >= this.config.maxDailyLossPercent) {
+        return { allowed: false, reason: `DAILY_LOSS_LIMIT_REACHED: Daily loss (-${dailyLossPercent.toFixed(2)}%) reached limit of ${this.config.maxDailyLossPercent}%.` };
+      }
     }
 
-    // 2. Max Drawdown Circuit Breakers
-    const currentDrawdownPercent = ((this.peakEquityUsd - this.currentEquityUsd) / this.peakEquityUsd) * 100;
-    if (currentDrawdownPercent >= this.config.maxDrawdownEmergencyPercent) {
-      return { allowed: false, reason: `MAX_DRAWDOWN_EMERGENCY: Drawdown (${currentDrawdownPercent.toFixed(2)}%) reached emergency halt limit of ${this.config.maxDrawdownEmergencyPercent}%.` };
-    }
-    if (currentDrawdownPercent >= this.config.maxDrawdownPausePercent) {
-      return { allowed: false, reason: `MAX_DRAWDOWN_PAUSE: Drawdown (${currentDrawdownPercent.toFixed(2)}%) exceeded pause threshold of ${this.config.maxDrawdownPausePercent}%.` };
+    // 2. Max Drawdown Circuit Breakers (only if currentEquity is tracked and peak is valid)
+    if (!this.config.bypassDrawdownLimit) {
+      const safePeak = Math.max(1, this.peakEquityUsd);
+      const safeCurrent = Math.max(0, this.currentEquityUsd);
+      const currentDrawdownPercent = safeCurrent >= safePeak ? 0 : ((safePeak - safeCurrent) / safePeak) * 100;
+
+      if (currentDrawdownPercent >= this.config.maxDrawdownEmergencyPercent) {
+        return { allowed: false, reason: `MAX_DRAWDOWN_EMERGENCY: Drawdown (${currentDrawdownPercent.toFixed(2)}%) reached emergency halt limit of ${this.config.maxDrawdownEmergencyPercent}%.` };
+      }
+      if (currentDrawdownPercent >= this.config.maxDrawdownPausePercent) {
+        return { allowed: false, reason: `MAX_DRAWDOWN_PAUSE: Drawdown (${currentDrawdownPercent.toFixed(2)}%) exceeded pause threshold of ${this.config.maxDrawdownPausePercent}%.` };
+      }
     }
 
     // 3. Max Open Positions
@@ -129,22 +247,27 @@ export class RiskEngine {
     }
 
     // 5. Total Exposure check
-    const totalExposureUsd = existingPositions.reduce((acc, p) => acc + p.valueUsd, 0);
-    const totalExposurePct = (totalExposureUsd / this.currentEquityUsd) * 100;
-    if (totalExposurePct >= this.config.maxTotalPortfolioExposurePercent) {
-      return { allowed: false, reason: `PORTFOLIO_EXPOSURE_CAP: Total portfolio exposure is ${totalExposurePct.toFixed(1)}% (max ${this.config.maxTotalPortfolioExposurePercent}%).` };
+    if (!this.config.bypassMaxExposureCap) {
+      const safeCurrent = Math.max(100, this.currentEquityUsd);
+      const totalExposureUsd = existingPositions.reduce((acc, p) => acc + p.valueUsd, 0);
+      const totalExposurePct = (totalExposureUsd / safeCurrent) * 100;
+      if (totalExposurePct >= this.config.maxTotalPortfolioExposurePercent) {
+        return { allowed: false, reason: `PORTFOLIO_EXPOSURE_CAP: Total portfolio exposure is ${totalExposurePct.toFixed(1)}% (max ${this.config.maxTotalPortfolioExposurePercent}%).` };
+      }
     }
 
     // 6. BTC Market Regime & Correlation Filter
     // If BTC is in a STRONG_BEAR market, block new altcoin longs to avoid false correlation entries
-    if (candidateSymbol !== 'BTCUSDT' && btcRegime === 'STRONG_BEAR') {
+    if (!this.config.bypassBtcCorrelationGuard && candidateSymbol !== 'BTCUSDT' && btcRegime === 'STRONG_BEAR') {
       return { allowed: false, reason: 'CORRELATION_GUARD: BTC macro regime is STRONG_BEAR. High-risk altcoin longs are suspended.' };
     }
 
     // 7. Correlation cluster limit (e.g. limit altcoins in same cluster)
-    const nonBtcPositions = existingPositions.filter(p => p.symbol !== 'BTCUSDT');
-    if (candidateSymbol !== 'BTCUSDT' && nonBtcPositions.length >= this.config.maxCorrelatedPositions) {
-      return { allowed: false, reason: `CORRELATION_LIMIT: Maximum of ${this.config.maxCorrelatedPositions} simultaneous correlated altcoin positions reached.` };
+    if (!this.config.bypassCorrelatedPositionsLimit) {
+      const nonBtcPositions = existingPositions.filter(p => p.symbol !== 'BTCUSDT');
+      if (candidateSymbol !== 'BTCUSDT' && nonBtcPositions.length >= this.config.maxCorrelatedPositions) {
+        return { allowed: false, reason: `CORRELATION_LIMIT: Maximum of ${this.config.maxCorrelatedPositions} simultaneous correlated altcoin positions reached.` };
+      }
     }
 
     return { allowed: true };
