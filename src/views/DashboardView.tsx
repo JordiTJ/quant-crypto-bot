@@ -419,18 +419,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         {p.side}
                       </span>
                       <span className="text-[11px] text-slate-400 font-mono">
-                        ${p.entryPrice.toLocaleString()} &rarr; ${p.currentPrice?.toLocaleString()}
+                        ${p.entryPrice.toLocaleString(undefined, {
+                          minimumFractionDigits: p.entryPrice > 10 ? 2 : p.entryPrice > 0.01 ? 4 : 6,
+                          maximumFractionDigits: p.entryPrice > 10 ? 2 : p.entryPrice > 0.01 ? 4 : 6
+                        })} &rarr; ${p.currentPrice?.toLocaleString(undefined, {
+                          minimumFractionDigits: (p.currentPrice || 0) > 10 ? 2 : (p.currentPrice || 0) > 0.01 ? 4 : 6,
+                          maximumFractionDigits: (p.currentPrice || 0) > 10 ? 2 : (p.currentPrice || 0) > 0.01 ? 4 : 6
+                        })}
                       </span>
                     </div>
                     <div className="text-[10px] text-slate-500 mt-1">
-                      Trailing Stop: {p.trailingStopActive ? `$${p.trailingStopPrice} (Active)` : 'Inactive'}
+                      Trailing Stop: {p.trailingStopActive && p.trailingStopPrice ? `$${p.trailingStopPrice.toLocaleString(undefined, {
+                        minimumFractionDigits: p.trailingStopPrice > 10 ? 2 : p.trailingStopPrice > 0.01 ? 4 : 6,
+                        maximumFractionDigits: p.trailingStopPrice > 10 ? 2 : p.trailingStopPrice > 0.01 ? 4 : 6
+                      })} (Active)` : 'Inactive'}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <div className="text-right font-mono">
-                      <div className="font-bold text-emerald-400">+${p.unrealizedPnl.toFixed(2)}</div>
-                      <div className="text-[10px] text-emerald-400/80">+{p.unrealizedPnlPercent}%</div>
+                      <div className={`font-bold ${p.unrealizedPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {p.unrealizedPnl >= 0 ? '+' : ''}${p.unrealizedPnl.toFixed(2)}
+                      </div>
+                      <div className={`text-[10px] ${p.unrealizedPnlPercent >= 0 ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
+                        {p.unrealizedPnlPercent >= 0 ? '+' : ''}{p.unrealizedPnlPercent}%
+                      </div>
                     </div>
                     <button
                       onClick={() => onClosePosition(p.id)}

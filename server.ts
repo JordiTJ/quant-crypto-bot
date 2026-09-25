@@ -23,7 +23,8 @@ import { globalSecurityManager } from './src/security/securityManager';
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
 const app = express();
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+// The dev server / applet must run on port 3000 (nginx reverse proxies port 8080 to 3000).
+const PORT = process.env.APP_PORT ? parseInt(process.env.APP_PORT, 10) : 3000;
 
 app.use(express.json());
 
