@@ -484,7 +484,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-500 mt-1">
-                    Entry: ${tr.entryPrice} | Exit: ${tr.exitPrice} | Return: {tr.returnR}R
+                    Entry: ${tr.entryPrice.toLocaleString(undefined, {
+                      minimumFractionDigits: tr.entryPrice > 10 ? 2 : tr.entryPrice > 0.01 ? 4 : 8,
+                      maximumFractionDigits: tr.entryPrice > 10 ? 2 : tr.entryPrice > 0.01 ? 4 : 8
+                    })} | Exit: ${tr.exitPrice.toLocaleString(undefined, {
+                      minimumFractionDigits: tr.exitPrice > 10 ? 2 : tr.exitPrice > 0.01 ? 4 : 8,
+                      maximumFractionDigits: tr.exitPrice > 10 ? 2 : tr.exitPrice > 0.01 ? 4 : 8
+                    })} | Return: {tr.returnR >= 0 ? '+' : ''}{tr.returnR}R
                   </div>
                 </div>
 

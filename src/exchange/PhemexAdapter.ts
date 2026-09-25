@@ -275,7 +275,9 @@ export class PhemexAdapter extends ExchangeAdapter {
       if (res.ok) {
         const rawCandles: any[][] = await res.json();
         if (Array.isArray(rawCandles) && rawCandles.length > 0) {
-          const precision = (symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') || symbol.includes('SUI')) ? 4 : 2;
+          const isMicro = symbol.includes('SHIB') || symbol.includes('PEPE');
+          const isSubDollar = symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') || symbol.includes('SUI') || symbol.includes('SEI');
+          const precision = isMicro ? 8 : isSubDollar ? 4 : 2;
           return rawCandles.map(c => ({
             timestamp: c[0],
             open: Number(parseFloat(c[1]).toFixed(precision)),
@@ -318,12 +320,16 @@ export class PhemexAdapter extends ExchangeAdapter {
       const low = Math.min(open, close) * (1 - Math.abs(noise) * 0.6);
       const volume = (1000000 / currentPrice) * (1 + Math.abs(cycle) * 2 + Math.abs(noise) * 3);
 
+      const isMicro = symbol.includes('SHIB') || symbol.includes('PEPE');
+      const isSubDollar = symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') || symbol.includes('SUI') || symbol.includes('SEI');
+      const precision = isMicro ? 8 : isSubDollar ? 4 : 2;
+
       candles.push({
         timestamp,
-        open: Number(open.toFixed(symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') ? 4 : 2)),
-        high: Number(high.toFixed(symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') ? 4 : 2)),
-        low: Number(low.toFixed(symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') ? 4 : 2)),
-        close: Number(close.toFixed(symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') ? 4 : 2)),
+        open: Number(open.toFixed(precision)),
+        high: Number(high.toFixed(precision)),
+        low: Number(low.toFixed(precision)),
+        close: Number(close.toFixed(precision)),
         volume: Number(volume.toFixed(2))
       });
 

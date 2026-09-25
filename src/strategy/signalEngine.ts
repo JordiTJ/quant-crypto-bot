@@ -254,18 +254,20 @@ export class SignalEngine {
       triggerActive = true;
       strategyName = 'Multi-Factor Trend Expansion';
       const stopDist = Math.max(latestCandle.close * 0.018, ind1h.atr * 2.0);
-      stopLoss = Number((latestCandle.close - stopDist).toFixed(4));
-      takeProfit1 = Number((latestCandle.close + stopDist * 1.5).toFixed(4));
-      takeProfit2 = Number((latestCandle.close + stopDist * 2.5).toFixed(4));
+      const prec = latestCandle.close >= 100 ? 2 : latestCandle.close >= 1 ? 4 : latestCandle.close >= 0.001 ? 6 : 8;
+      stopLoss = Number((latestCandle.close - stopDist).toFixed(prec));
+      takeProfit1 = Number((latestCandle.close + stopDist * 1.5).toFixed(prec));
+      takeProfit2 = Number((latestCandle.close + stopDist * 2.5).toFixed(prec));
       rationale = `Hoge factor convergentie (${score.totalScore}/100) met bevestigde 4H/1H/15M alignment en gunstig volume (${ind1h.relativeVolume.toFixed(1)}x)`;
     } else if (score.totalScore >= 70) {
       // Solid candidate setup but awaiting precise 15M trigger or breakout
       triggerActive = false;
       strategyName = 'Multi-Factor Trend (Awaiting Trigger)';
       const stopDist = Math.max(latestCandle.close * 0.018, ind1h.atr * 2.0);
-      stopLoss = Number((latestCandle.close - stopDist).toFixed(4));
-      takeProfit1 = Number((latestCandle.close + stopDist * 1.5).toFixed(4));
-      takeProfit2 = Number((latestCandle.close + stopDist * 2.5).toFixed(4));
+      const prec = latestCandle.close >= 100 ? 2 : latestCandle.close >= 1 ? 4 : latestCandle.close >= 0.001 ? 6 : 8;
+      stopLoss = Number((latestCandle.close - stopDist).toFixed(prec));
+      takeProfit1 = Number((latestCandle.close + stopDist * 1.5).toFixed(prec));
+      takeProfit2 = Number((latestCandle.close + stopDist * 2.5).toFixed(prec));
       rationale = `Kwalificerende setup (${score.totalScore}/100). Wacht op definitieve 15M breakout of volume-impuls alvorens in te stappen.`;
     }
 

@@ -12,6 +12,13 @@ import { globalStorageManager } from '../storage/storageManager';
 import { globalSlackNotifier } from '../notifications/slackNotifier';
 import { globalDiscordNotifier } from '../notifications/discordNotifier';
 
+function getPriceDecimals(price: number): number {
+  if (price >= 100) return 2;
+  if (price >= 1) return 4;
+  if (price >= 0.001) return 6;
+  return 8;
+}
+
 export class ExchangeManager {
   private adapters: Map<string, ExchangeAdapter> = new Map();
   private activeExchangeId = 'phemex';
@@ -127,17 +134,27 @@ export class ExchangeManager {
       pos.unrealizedPnl = Number((diff * pos.amount).toFixed(2));
       pos.unrealizedPnlPercent = Number(((diff / pos.entryPrice) * 100).toFixed(2));
 
-      // Update trailing stop if in profit
-      const decimals = livePrice >= 100 ? 2 : livePrice >= 1 ? 4 : 6;
-      if (pos.side === 'LONG' && pos.trailingStopActive && pos.trailingStopPrice) {
-        const potentialTrailing = livePrice * 0.985;
-        if (potentialTrailing > pos.trailingStopPrice && livePrice > pos.entryPrice) {
-          pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
+      // Dynamic Trailing Stop: arms once in profit (+0.8%), trails 1.5% below high watermark
+      const decimals = getPriceDecimals(livePrice);
+      if (pos.side === 'LONG') {
+        if (!pos.trailingStopActive && livePrice >= pos.entryPrice * 1.008) {
+          pos.trailingStopActive = true;
+          pos.trailingStopPrice = Number((livePrice * 0.985).toFixed(decimals));
+        } else if (pos.trailingStopActive && pos.trailingStopPrice) {
+          const potentialTrailing = livePrice * 0.985;
+          if (potentialTrailing > pos.trailingStopPrice) {
+            pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
+          }
         }
-      } else if (pos.side === 'SHORT' && pos.trailingStopActive && pos.trailingStopPrice) {
-        const potentialTrailing = livePrice * 1.015;
-        if (potentialTrailing < pos.trailingStopPrice && livePrice < pos.entryPrice) {
-          pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
+      } else if (pos.side === 'SHORT') {
+        if (!pos.trailingStopActive && livePrice <= pos.entryPrice * 0.992) {
+          pos.trailingStopActive = true;
+          pos.trailingStopPrice = Number((livePrice * 1.015).toFixed(decimals));
+        } else if (pos.trailingStopActive && pos.trailingStopPrice) {
+          const potentialTrailing = livePrice * 1.015;
+          if (potentialTrailing < pos.trailingStopPrice) {
+            pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
+          }
         }
       }
 
@@ -195,7 +212,7 @@ export class ExchangeManager {
     }
 
     const side: 'LONG' | 'SHORT' = (signal.side || signal.direction || (signal.action === 'SELL' ? 'SHORT' : 'LONG')) as 'LONG' | 'SHORT';
-    const initialDecimals = signal.currentPrice >= 100 ? 2 : signal.currentPrice >= 1 ? 4 : 6;
+    const initialDecimals = getPriceDecimals(signal.currentPrice);
     const trailingStopPrice = side === 'LONG' 
       ? Number((signal.currentPrice * 0.985).toFixed(initialDecimals)) 
       : Number((signal.currentPrice * 1.015).toFixed(initialDecimals));
@@ -211,8 +228,8 @@ export class ExchangeManager {
       stopLoss: signal.stopLoss,
       takeProfit1: signal.takeProfit1,
       takeProfit2: signal.takeProfit2,
-      trailingStopActive: true,
-      trailingStopPrice,
+      trailingStopActive: false, // Trailing stop only activates once position is in profit
+      trailingStopPrice: undefined,
       unrealizedPnl: 0,
       unrealizedPnlPercent: 0,
       strategy: signal.strategy,

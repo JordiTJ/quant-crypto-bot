@@ -14,6 +14,13 @@ export interface StrategySignalResult {
   rationale: string;
 }
 
+function getPriceDecimals(price: number): number {
+  if (price >= 100) return 2;
+  if (price >= 1) return 4;
+  if (price >= 0.001) return 6;
+  return 8;
+}
+
 export class StrategyDefinitions {
   /**
    * Strategy A: Trend Following
@@ -46,13 +53,14 @@ export class StrategyDefinitions {
     const stopLoss = candle.close - stopDistance;
     const takeProfit1 = candle.close + stopDistance * 1.5;
     const takeProfit2 = candle.close + stopDistance * 2.5;
+    const prec = getPriceDecimals(candle.close);
 
     return {
       triggered,
       action: 'BUY',
-      stopLoss: Number(stopLoss.toFixed(4)),
-      takeProfit1: Number(takeProfit1.toFixed(4)),
-      takeProfit2: Number(takeProfit2.toFixed(4)),
+      stopLoss: Number(stopLoss.toFixed(prec)),
+      takeProfit1: Number(takeProfit1.toFixed(prec)),
+      takeProfit2: Number(takeProfit2.toFixed(prec)),
       rationale: triggered 
         ? `EMA alignment (9>21>50) confirmed by ADX (${ind.adx.toFixed(1)}), non-extended distance (${distanceEma50Percent.toFixed(1)}%) and RVol (${ind.relativeVolume.toFixed(2)})`
         : 'Trend following conditions not met'
@@ -85,15 +93,16 @@ export class StrategyDefinitions {
     const stopLoss = candle.close - stopDistance;
     const takeProfit1 = candle.close + stopDistance * 1.6;
     const takeProfit2 = candle.close + stopDistance * 2.8;
+    const prec = getPriceDecimals(candle.close);
 
     return {
       triggered,
       action: 'BUY',
-      stopLoss: Number(stopLoss.toFixed(4)),
-      takeProfit1: Number(takeProfit1.toFixed(4)),
-      takeProfit2: Number(takeProfit2.toFixed(4)),
+      stopLoss: Number(stopLoss.toFixed(prec)),
+      takeProfit1: Number(takeProfit1.toFixed(prec)),
+      takeProfit2: Number(takeProfit2.toFixed(prec)),
       rationale: triggered
-        ? `Donchian channel breakout above ${ind.donchian.upper.toFixed(2)} with explosive RVol (${ind.relativeVolume.toFixed(2)}) and healthy RSI (${ind.rsi14.toFixed(1)})`
+        ? `Donchian channel breakout above ${ind.donchian.upper.toFixed(prec > 4 ? prec : 2)} with explosive RVol (${ind.relativeVolume.toFixed(2)}) and healthy RSI (${ind.rsi14.toFixed(1)})`
         : 'No breakout detected'
     };
   }
@@ -125,15 +134,16 @@ export class StrategyDefinitions {
     const stopLoss = candle.close - stopDistance;
     const takeProfit1 = candle.close + stopDistance * 1.5;
     const takeProfit2 = candle.close + stopDistance * 2.4;
+    const prec = getPriceDecimals(candle.close);
 
     return {
       triggered,
       action: 'BUY',
-      stopLoss: Number(stopLoss.toFixed(4)),
-      takeProfit1: Number(takeProfit1.toFixed(4)),
-      takeProfit2: Number(takeProfit2.toFixed(4)),
+      stopLoss: Number(stopLoss.toFixed(prec)),
+      takeProfit1: Number(takeProfit1.toFixed(prec)),
+      takeProfit2: Number(takeProfit2.toFixed(prec)),
       rationale: triggered
-        ? `Clean pullback to EMA21 (${ind.ema21.toFixed(2)}) on calm volume (RVol ${ind.relativeVolume.toFixed(2)}x) with StochRSI reversal`
+        ? `Clean pullback to EMA21 (${ind.ema21.toFixed(prec > 4 ? prec : 2)}) on calm volume (RVol ${ind.relativeVolume.toFixed(2)}x) with StochRSI reversal`
         : 'Pullback criteria not satisfied'
     };
   }
@@ -166,13 +176,14 @@ export class StrategyDefinitions {
     // Mean reversion targets middle band (SMA20) and upper band
     const takeProfit1 = ind.bollingerBands.middle;
     const takeProfit2 = ind.bollingerBands.upper;
+    const prec = getPriceDecimals(candle.close);
 
     return {
       triggered,
       action: 'BUY',
-      stopLoss: Number(stopLoss.toFixed(4)),
-      takeProfit1: Number(takeProfit1.toFixed(4)),
-      takeProfit2: Number(takeProfit2.toFixed(4)),
+      stopLoss: Number(stopLoss.toFixed(prec)),
+      takeProfit1: Number(takeProfit1.toFixed(prec)),
+      takeProfit2: Number(takeProfit2.toFixed(prec)),
       rationale: triggered
         ? `Range mean reversion: lower Bollinger touch met oversold RSI (${ind.rsi14.toFixed(1)}), low ADX (${ind.adx.toFixed(1)}) en uitgeput verkoopvolume (RVol ${ind.relativeVolume.toFixed(2)}x)`
         : 'Mean reversion conditions not present'
@@ -203,13 +214,14 @@ export class StrategyDefinitions {
     const stopLoss = candle.close - stopDistance;
     const takeProfit1 = candle.close + stopDistance * 1.5;
     const takeProfit2 = candle.close + stopDistance * 2.6;
+    const prec = getPriceDecimals(candle.close);
 
     return {
       triggered,
       action: 'BUY',
-      stopLoss: Number(stopLoss.toFixed(4)),
-      takeProfit1: Number(takeProfit1.toFixed(4)),
-      takeProfit2: Number(takeProfit2.toFixed(4)),
+      stopLoss: Number(stopLoss.toFixed(prec)),
+      takeProfit1: Number(takeProfit1.toFixed(prec)),
+      takeProfit2: Number(takeProfit2.toFixed(prec)),
       rationale: triggered
         ? `Bollinger squeeze expansion: price piercing upper band with RVol surge (${ind.relativeVolume.toFixed(2)})`
         : 'No volatility breakout detected'

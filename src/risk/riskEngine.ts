@@ -179,7 +179,12 @@ export class RiskEngine {
       targetAmount = targetValueUsd / entryPrice;
     }
 
-    const precision = (symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') || symbol.includes('SUI')) ? 1 : 4;
+    // Token quantity precision: micro coins like SHIB/PEPE have millions/billions of units, so precision should be 0 (integers).
+    // Mid-priced coins (XRP, DOGE, ADA, SUI) typically use 1 or 2 decimals.
+    // Low-supply high-price coins (BTC, ETH, TAO) use 4 decimals.
+    const isMicroCoin = symbol.includes('SHIB') || symbol.includes('PEPE');
+    const isMidCoin = symbol.includes('XRP') || symbol.includes('DOGE') || symbol.includes('ADA') || symbol.includes('SUI');
+    const precision = isMicroCoin ? 0 : isMidCoin ? 1 : 4;
     const finalAmount = Number(targetAmount.toFixed(precision));
     const finalValueUsd = Number((finalAmount * entryPrice).toFixed(2));
     const finalRiskAmount = Number((finalAmount * stopDistance).toFixed(2));
