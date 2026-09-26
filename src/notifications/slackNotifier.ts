@@ -138,12 +138,23 @@ export class SlackNotifier {
     const emoji = isWin ? '🎯' : '🛑';
     const sign = isWin ? '+' : '';
 
+    const isTp1 = trade.exitReason === 'TAKE_PROFIT_1';
+    const isTp2 = trade.exitReason === 'TAKE_PROFIT_2';
+
+    const headerText = isTp1
+      ? `🎯 *[TP1 GERAAPT] ${trade.symbol} • 50% Winst Veiliggesteld, Stop Loss naar Break-Even!*`
+      : isTp2
+      ? `🎯 *[TP2 DOEL BEREIKT] ${trade.symbol} • Volledige restpositie gesloten!*`
+      : `${emoji} *[TRADE EXIT] ${trade.symbol} gesloten via ${trade.exitReason}*`;
+
     const payload = {
-      text: `${emoji} *[TRADE EXIT] ${trade.symbol} gesloten via ${trade.exitReason}*`,
+      text: headerText,
       attachments: [
         {
           color,
-          title: `${trade.symbol} • ${isWin ? 'Winst' : 'Verlies'}: ${sign}$${trade.netPnl.toFixed(2)} (${sign}${trade.netPnlPercent.toFixed(2)}%)`,
+          title: isTp1 
+            ? `${trade.symbol} • 50% Positie verzilverd @ $${trade.exitPrice.toLocaleString()} (${sign}$${trade.netPnl.toFixed(2)})`
+            : `${trade.symbol} • ${isWin ? 'Winst' : 'Verlies'}: ${sign}$${trade.netPnl.toFixed(2)} (${sign}${trade.netPnlPercent.toFixed(2)}%)`,
           fields: [
             { title: 'Exit Prijs', value: `$${trade.exitPrice.toLocaleString()}`, short: true },
             { title: 'Reden van Sluiting', value: trade.exitReason, short: true },

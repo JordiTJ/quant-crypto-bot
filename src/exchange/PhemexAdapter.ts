@@ -10,6 +10,12 @@ export class PhemexAdapter extends ExchangeAdapter {
   private baseUrl = 'https://api.phemex.com';
   private apiKey = '';
   private apiSecret = '';
+  private static dynamicPricesMap: Record<string, number> = {};
+
+  static setDynamicPrices(prices: Record<string, number>): void {
+    if (!prices) return;
+    this.dynamicPricesMap = { ...this.dynamicPricesMap, ...prices };
+  }
 
   constructor() {
     super('phemex');
@@ -117,36 +123,36 @@ export class PhemexAdapter extends ExchangeAdapter {
       { symbol: 'XRPUSDT', baseAsset: 'XRP', coinName: 'XRP Ledger', category: 'MAJOR', defaultPrice: 1.57, marketCapUsd: 89000000000 },
 
       // High-Throughput Layer-1 Blockchains
-      { symbol: 'SUIUSDT', baseAsset: 'SUI', coinName: 'Sui Network', category: 'LAYER_1', defaultPrice: 1.02, marketCapUsd: 2800000000 },
-      { symbol: 'AVAXUSDT', baseAsset: 'AVAX', coinName: 'Avalanche', category: 'LAYER_1', defaultPrice: 11.0, marketCapUsd: 4500000000 },
-      { symbol: 'ADAUSDT', baseAsset: 'ADA', coinName: 'Cardano', category: 'LAYER_1', defaultPrice: 0.25, marketCapUsd: 9000000000 },
-      { symbol: 'NEARUSDT', baseAsset: 'NEAR', coinName: 'NEAR Protocol', category: 'LAYER_1', defaultPrice: 4.85, marketCapUsd: 5600000000 },
-      { symbol: 'APTUSDT', baseAsset: 'APT', coinName: 'Aptos', category: 'LAYER_1', defaultPrice: 6.20, marketCapUsd: 2700000000 },
-      { symbol: 'INJUSDT', baseAsset: 'INJ', coinName: 'Injective', category: 'LAYER_1', defaultPrice: 8.20, marketCapUsd: 2100000000 },
-      { symbol: 'SEIUSDT', baseAsset: 'SEI', coinName: 'Sei Network', category: 'LAYER_1', defaultPrice: 0.06, marketCapUsd: 1400000000 },
+      { symbol: 'SUIUSDT', baseAsset: 'SUI', coinName: 'Sui Network', category: 'LAYER_1', defaultPrice: 1.16, marketCapUsd: 3200000000 },
+      { symbol: 'AVAXUSDT', baseAsset: 'AVAX', coinName: 'Avalanche', category: 'LAYER_1', defaultPrice: 10.68, marketCapUsd: 4300000000 },
+      { symbol: 'ADAUSDT', baseAsset: 'ADA', coinName: 'Cardano', category: 'LAYER_1', defaultPrice: 0.255, marketCapUsd: 9100000000 },
+      { symbol: 'NEARUSDT', baseAsset: 'NEAR', coinName: 'NEAR Protocol', category: 'LAYER_1', defaultPrice: 4.82, marketCapUsd: 5500000000 },
+      { symbol: 'APTUSDT', baseAsset: 'APT', coinName: 'Aptos', category: 'LAYER_1', defaultPrice: 0.845, marketCapUsd: 500000000 },
+      { symbol: 'INJUSDT', baseAsset: 'INJ', coinName: 'Injective', category: 'LAYER_1', defaultPrice: 7.81, marketCapUsd: 1900000000 },
+      { symbol: 'SEIUSDT', baseAsset: 'SEI', coinName: 'Sei Network', category: 'LAYER_1', defaultPrice: 0.0728, marketCapUsd: 1500000000 },
 
       // AI, Decentralized Data & High-Performance Compute
-      { symbol: 'RENDERUSDT', baseAsset: 'RENDER', coinName: 'Render Network', category: 'AI_DATA', defaultPrice: 4.15, marketCapUsd: 2100000000 },
-      { symbol: 'FETUSDT', baseAsset: 'FET', coinName: 'Artificial Superintelligence (FET)', category: 'AI_DATA', defaultPrice: 1.35, marketCapUsd: 3400000000 },
-      { symbol: 'TAOUSDT', baseAsset: 'TAO', coinName: 'Bittensor', category: 'AI_DATA', defaultPrice: 380.0, marketCapUsd: 2800000000 },
-      { symbol: 'ICPUSDT', baseAsset: 'ICP', coinName: 'Internet Computer', category: 'AI_DATA', defaultPrice: 3.10, marketCapUsd: 3900000000 },
+      { symbol: 'RENDERUSDT', baseAsset: 'RENDER', coinName: 'Render Network', category: 'AI_DATA', defaultPrice: 1.99, marketCapUsd: 1100000000 },
+      { symbol: 'FETUSDT', baseAsset: 'FET', coinName: 'Artificial Superintelligence (FET)', category: 'AI_DATA', defaultPrice: 0.242, marketCapUsd: 650000000 },
+      { symbol: 'TAOUSDT', baseAsset: 'TAO', coinName: 'Bittensor', category: 'AI_DATA', defaultPrice: 312.70, marketCapUsd: 2800000000 },
+      { symbol: 'ICPUSDT', baseAsset: 'ICP', coinName: 'Internet Computer', category: 'AI_DATA', defaultPrice: 3.19, marketCapUsd: 3900000000 },
 
       // High Liquidity DeFi, RWA & Oracles
-      { symbol: 'LINKUSDT', baseAsset: 'LINK', coinName: 'Chainlink Oracle', category: 'INFRA', defaultPrice: 13.0, marketCapUsd: 8000000000 },
-      { symbol: 'AAVEUSDT', baseAsset: 'AAVE', coinName: 'Aave Protocol', category: 'DEFI', defaultPrice: 155.0, marketCapUsd: 2300000000 },
-      { symbol: 'UNIUSDT', baseAsset: 'UNI', coinName: 'Uniswap DEX', category: 'DEFI', defaultPrice: 7.20, marketCapUsd: 4300000000 },
-      { symbol: 'ONDOUSDT', baseAsset: 'ONDO', coinName: 'Ondo Finance (RWA)', category: 'DEFI', defaultPrice: 0.48, marketCapUsd: 1300000000 },
-      { symbol: 'PENDLEUSDT', baseAsset: 'PENDLE', coinName: 'Pendle Finance', category: 'DEFI', defaultPrice: 2.48, marketCapUsd: 720000000 },
-      { symbol: 'JUPUSDT', baseAsset: 'JUP', coinName: 'Jupiter Exchange', category: 'DEFI', defaultPrice: 0.30, marketCapUsd: 1300000000 },
+      { symbol: 'LINKUSDT', baseAsset: 'LINK', coinName: 'Chainlink Oracle', category: 'INFRA', defaultPrice: 14.08, marketCapUsd: 8400000000 },
+      { symbol: 'AAVEUSDT', baseAsset: 'AAVE', coinName: 'Aave Protocol', category: 'DEFI', defaultPrice: 154.36, marketCapUsd: 2300000000 },
+      { symbol: 'UNIUSDT', baseAsset: 'UNI', coinName: 'Uniswap DEX', category: 'DEFI', defaultPrice: 9.68, marketCapUsd: 5800000000 },
+      { symbol: 'ONDOUSDT', baseAsset: 'ONDO', coinName: 'Ondo Finance (RWA)', category: 'DEFI', defaultPrice: 0.546, marketCapUsd: 1400000000 },
+      { symbol: 'PENDLEUSDT', baseAsset: 'PENDLE', coinName: 'Pendle Finance', category: 'DEFI', defaultPrice: 2.54, marketCapUsd: 740000000 },
+      { symbol: 'JUPUSDT', baseAsset: 'JUP', coinName: 'Jupiter Exchange', category: 'DEFI', defaultPrice: 0.342, marketCapUsd: 1400000000 },
 
       // Modular Data Availability & Infrastructure
-      { symbol: 'TIAUSDT', baseAsset: 'TIA', coinName: 'Celestia Modular DA', category: 'INFRA', defaultPrice: 0.47, marketCapUsd: 1200000000 },
+      { symbol: 'TIAUSDT', baseAsset: 'TIA', coinName: 'Celestia Modular DA', category: 'INFRA', defaultPrice: 0.488, marketCapUsd: 1200000000 },
 
       // High-Volume Cult & High-Beta Memecoins
-      { symbol: 'DOGEUSDT', baseAsset: 'DOGE', coinName: 'Dogecoin', category: 'MEME', defaultPrice: 0.10, marketCapUsd: 15000000000 },
-      { symbol: 'PEPEUSDT', baseAsset: 'PEPE', coinName: 'Pepe', category: 'MEME', defaultPrice: 0.0000085, marketCapUsd: 3600000000 },
-      { symbol: 'SHIBUSDT', baseAsset: 'SHIB', coinName: 'Shiba Inu', category: 'MEME', defaultPrice: 0.000014, marketCapUsd: 8200000000 },
-      { symbol: 'WIFUSDT', baseAsset: 'WIF', coinName: 'dogwifhat', category: 'MEME', defaultPrice: 0.24, marketCapUsd: 2200000000 }
+      { symbol: 'DOGEUSDT', baseAsset: 'DOGE', coinName: 'Dogecoin', category: 'MEME', defaultPrice: 0.098, marketCapUsd: 14500000000 },
+      { symbol: 'PEPEUSDT', baseAsset: 'PEPE', coinName: 'Pepe', category: 'MEME', defaultPrice: 0.00000443, marketCapUsd: 1900000000 },
+      { symbol: 'SHIBUSDT', baseAsset: 'SHIB', coinName: 'Shiba Inu', category: 'MEME', defaultPrice: 0.00000589, marketCapUsd: 3500000000 },
+      { symbol: 'WIFUSDT', baseAsset: 'WIF', coinName: 'dogwifhat', category: 'MEME', defaultPrice: 0.249, marketCapUsd: 2200000000 }
     ];
 
     try {
@@ -154,7 +160,7 @@ export class PhemexAdapter extends ExchangeAdapter {
       const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(symList))}`;
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), 7000);
       
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
@@ -171,7 +177,8 @@ export class PhemexAdapter extends ExchangeAdapter {
 
       const markets: MarketTicker[] = trackedSymbols.map(item => {
         const t = tickerMap.get(item.symbol);
-        const price = t ? parseFloat(t.lastPrice) : item.defaultPrice;
+        const dynamicPrice = PhemexAdapter.dynamicPricesMap[item.symbol];
+        const price = t ? parseFloat(t.lastPrice) : (dynamicPrice || item.defaultPrice);
         const change24h = t ? parseFloat(t.priceChangePercent) : 1.25;
         const high24h = t ? parseFloat(t.highPrice) : price * 1.03;
         const low24h = t ? parseFloat(t.lowPrice) : price * 0.97;
@@ -222,6 +229,14 @@ export class PhemexAdapter extends ExchangeAdapter {
 
       this.lastMarketsCache = markets;
       this.lastMarketsFetchTime = now;
+
+      // Update in-memory dynamic prices map
+      for (const m of markets) {
+        if (m.price && m.price > 0) {
+          PhemexAdapter.dynamicPricesMap[m.symbol] = m.price;
+        }
+      }
+
       return markets;
     } catch (err: any) {
       console.warn('[PhemexAdapter] Live price fetch fallback to internal stream:', err?.message || err);
@@ -231,8 +246,12 @@ export class PhemexAdapter extends ExchangeAdapter {
   }
 
   private getFallbackMarkets(trackedSymbols: any[]): MarketTicker[] {
+    if (this.lastMarketsCache && this.lastMarketsCache.length > 0) {
+      return this.lastMarketsCache;
+    }
     return trackedSymbols.map(m => {
-      const price = m.defaultPrice;
+      const dynamicPrice = PhemexAdapter.dynamicPricesMap[m.symbol];
+      const price = dynamicPrice || m.defaultPrice;
       const change24h = 1.8;
       const high24h = price * 1.025;
       const low24h = price * 0.975;

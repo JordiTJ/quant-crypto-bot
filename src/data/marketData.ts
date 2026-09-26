@@ -29,6 +29,15 @@ export class MarketDataEngine {
     }
   }
 
+  static setInitialPrices(prices: Record<string, number>): void {
+    if (!prices) return;
+    for (const [sym, price] of Object.entries(prices)) {
+      if (price && price > 0) {
+        this.livePricesMap.set(sym, price);
+      }
+    }
+  }
+
   static getLivePrice(symbol: string): number | undefined {
     return this.livePricesMap.get(symbol);
   }
@@ -79,34 +88,34 @@ export class MarketDataEngine {
       return this.cache.get(cacheKey)!;
     }
 
-    let basePrice = targetLivePrice || 86200;
+    let basePrice = targetLivePrice || 84200;
     if (!targetLivePrice) {
-      if (symbol.includes('ETH')) basePrice = 2750;
-      else if (symbol.includes('SOL')) basePrice = 118;
-      else if (symbol.includes('BNB')) basePrice = 790;
-      else if (symbol.includes('XRP')) basePrice = 1.57;
-      else if (symbol.includes('DOGE')) basePrice = 0.10;
-      else if (symbol.includes('ADA')) basePrice = 0.25;
-      else if (symbol.includes('AVAX')) basePrice = 11.0;
-      else if (symbol.includes('SUI')) basePrice = 1.02;
-      else if (symbol.includes('LINK')) basePrice = 13.0;
-      else if (symbol.includes('NEAR')) basePrice = 4.85;
-      else if (symbol.includes('APT')) basePrice = 6.20;
-      else if (symbol.includes('RENDER')) basePrice = 4.15;
-      else if (symbol.includes('FET')) basePrice = 1.35;
-      else if (symbol.includes('TAO')) basePrice = 380.0;
-      else if (symbol.includes('AAVE')) basePrice = 155.0;
-      else if (symbol.includes('UNI')) basePrice = 7.20;
-      else if (symbol.includes('PEPE')) basePrice = 0.0000085;
-      else if (symbol.includes('SHIB')) basePrice = 0.000014;
-      else if (symbol.includes('INJ')) basePrice = 8.20;
-      else if (symbol.includes('SEI')) basePrice = 0.06;
-      else if (symbol.includes('ICP')) basePrice = 3.10;
-      else if (symbol.includes('ONDO')) basePrice = 0.48;
-      else if (symbol.includes('PENDLE')) basePrice = 2.48;
-      else if (symbol.includes('JUP')) basePrice = 0.30;
-      else if (symbol.includes('TIA')) basePrice = 0.47;
-      else if (symbol.includes('WIF')) basePrice = 0.24;
+      if (symbol.includes('ETH')) basePrice = 2690;
+      else if (symbol.includes('SOL')) basePrice = 120.5;
+      else if (symbol.includes('BNB')) basePrice = 773;
+      else if (symbol.includes('XRP')) basePrice = 1.55;
+      else if (symbol.includes('DOGE')) basePrice = 0.098;
+      else if (symbol.includes('ADA')) basePrice = 0.255;
+      else if (symbol.includes('AVAX')) basePrice = 10.68;
+      else if (symbol.includes('SUI')) basePrice = 1.16;
+      else if (symbol.includes('LINK')) basePrice = 14.08;
+      else if (symbol.includes('NEAR')) basePrice = 4.82;
+      else if (symbol.includes('APT')) basePrice = 0.845;
+      else if (symbol.includes('RENDER')) basePrice = 1.99;
+      else if (symbol.includes('FET')) basePrice = 0.242;
+      else if (symbol.includes('TAO')) basePrice = 312.70;
+      else if (symbol.includes('AAVE')) basePrice = 154.36;
+      else if (symbol.includes('UNI')) basePrice = 9.68;
+      else if (symbol.includes('PEPE')) basePrice = 0.00000443;
+      else if (symbol.includes('SHIB')) basePrice = 0.00000589;
+      else if (symbol.includes('INJ')) basePrice = 7.81;
+      else if (symbol.includes('SEI')) basePrice = 0.0728;
+      else if (symbol.includes('ICP')) basePrice = 3.19;
+      else if (symbol.includes('ONDO')) basePrice = 0.546;
+      else if (symbol.includes('PENDLE')) basePrice = 2.54;
+      else if (symbol.includes('JUP')) basePrice = 0.342;
+      else if (symbol.includes('TIA')) basePrice = 0.488;
+      else if (symbol.includes('WIF')) basePrice = 0.249;
     }
 
     // Derive deterministic unique symbol seed based on full symbol characters

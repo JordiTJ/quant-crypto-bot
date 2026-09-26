@@ -171,10 +171,20 @@ export class ExchangeManager {
         const trade = this.closePosition(pos.id, pos.trailingStopPrice, 'TRAILING_STOP');
         if (trade) closedTrades.push(trade);
       }
-      // AUTOMATIC EXIT 3: Take Profit Target 2 reached
+      // AUTOMATIC EXIT 3A: Take Profit Target 1 reached (Partial 50% profit taking + Move SL to Breakeven)
       else if (
-        (pos.side === 'LONG' && pos.takeProfit2 && livePrice >= pos.takeProfit2) ||
-        (pos.side === 'SHORT' && pos.takeProfit2 && livePrice <= pos.takeProfit2)
+        !pos.takeProfit1Hit && pos.takeProfit1 &&
+        ((pos.side === 'LONG' && livePrice >= pos.takeProfit1) ||
+         (pos.side === 'SHORT' && livePrice <= pos.takeProfit1))
+      ) {
+        const trade = this.closePartialPosition(pos.id, pos.takeProfit1, 0.5, 'TAKE_PROFIT_1');
+        if (trade) closedTrades.push(trade);
+      }
+      // AUTOMATIC EXIT 3B: Take Profit Target 2 reached (Full close remaining runner)
+      else if (
+        pos.takeProfit2 &&
+        ((pos.side === 'LONG' && livePrice >= pos.takeProfit2) ||
+         (pos.side === 'SHORT' && livePrice <= pos.takeProfit2))
       ) {
         const trade = this.closePosition(pos.id, pos.takeProfit2, 'TAKE_PROFIT_2');
         if (trade) closedTrades.push(trade);
@@ -244,7 +254,7 @@ export class ExchangeManager {
     return {
       success: true,
       position: newPos,
-      message: `Positie succesvol geopend: ${newPos.side} ${newPos.symbol} @ $${newPos.entryPrice}. SL: $${newPos.stopLoss}, TP: $${newPos.takeProfit2}`
+      message: `Positie succesvol geopend: ${newPos.side} ${newPos.symbol} @ $${newPos.entryPrice}. SL: $${newPos.stopLoss}, TP1: $${newPos.takeProfit1}, TP2: $${newPos.takeProfit2}`
     };
   }
 
@@ -255,6 +265,97 @@ export class ExchangeManager {
     }, true);
     globalSlackNotifier.notifyTradeEntry(pos).catch(() => {});
     globalDiscordNotifier.notifyTradeEntry(pos).catch(() => {});
+  }
+
+  closePartialPosition(
+    positionId: string,
+    exitPrice: number,
+    ratio = 0.5,
+    reason: TradeRecord['exitReason'] = 'TAKE_PROFIT_1'
+  ): TradeRecord | null {
+    const pos = this.openPositions.get(positionId);
+    if (!pos || pos.amount <= 0) return null;
+
+    const isMicro = pos.symbol.includes('SHIB') || pos.symbol.includes('PEPE');
+    const isMid = pos.symbol.includes('XRP') || pos.symbol.includes('DOGE') || pos.symbol.includes('ADA') || pos.symbol.includes('SUI');
+    const qtyPrecision = isMicro ? 0 : isMid ? 1 : 4;
+
+    let closeAmount = Number((pos.amount * ratio).toFixed(qtyPrecision));
+    if (closeAmount <= 0) closeAmount = pos.amount;
+    const remainingAmount = Number((pos.amount - closeAmount).toFixed(qtyPrecision));
+
+    const partialValueUsd = exitPrice * closeAmount;
+    const grossPnl = pos.side === 'LONG'
+      ? (exitPrice - pos.entryPrice) * closeAmount
+      : (pos.entryPrice - exitPrice) * closeAmount;
+
+    const fees = partialValueUsd * 0.001;
+    const slippage = partialValueUsd * 0.0005;
+    const netPnl = grossPnl - fees - slippage;
+    const netPnlPercent = partialValueUsd === 0 ? 0 : (netPnl / partialValueUsd) * 100;
+    const initialRisk = Math.abs(pos.entryPrice - pos.stopLoss) * closeAmount;
+    const returnR = initialRisk === 0 ? 0 : netPnl / initialRisk;
+
+    const trade: TradeRecord = {
+      id: `TR_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      clientOrderId: pos.clientOrderId,
+      exchangeOrderId: `EX_${Date.now()}`,
+      symbol: pos.symbol,
+      side: pos.side,
+      strategy: pos.strategy,
+      entryTimestamp: pos.entryTimestamp,
+      exitTimestamp: Date.now(),
+      entryPrice: pos.entryPrice,
+      exitPrice,
+      amount: closeAmount,
+      grossPnl: Number(grossPnl.toFixed(2)),
+      feesPaid: Number(fees.toFixed(2)),
+      slippageCost: Number(slippage.toFixed(2)),
+      netPnl: Number(netPnl.toFixed(2)),
+      netPnlPercent: Number(netPnlPercent.toFixed(2)),
+      returnR: Number(returnR.toFixed(2)),
+      exitReason: reason,
+      marketRegime: 'STRONG_BULL',
+      signalScore: 78,
+      indicatorsAtEntry: { adx: 28, rsi: 58, atrPercent: 2.2, rvol: 1.8 }
+    };
+
+    this.tradeHistory.unshift(trade);
+
+    if (remainingAmount <= 0) {
+      // Entire position was liquidated
+      this.openPositions.delete(positionId);
+    } else {
+      // Partial close: keep remainder open, lock in TP1, and move SL to Break-Even!
+      pos.amount = remainingAmount;
+      pos.valueUsd = Number((pos.currentPrice * remainingAmount).toFixed(2));
+      pos.takeProfit1Hit = true;
+      // Move Stop Loss to Break-Even (entryPrice)
+      pos.stopLoss = pos.entryPrice;
+      // Activate dynamic trailing stop on remainder
+      pos.trailingStopActive = true;
+      const decimals = getPriceDecimals(pos.currentPrice);
+      if (pos.side === 'LONG') {
+        const potentialTrailing = pos.currentPrice * 0.985;
+        if (!pos.trailingStopPrice || potentialTrailing > pos.trailingStopPrice) {
+          pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
+        }
+      } else {
+        const potentialTrailing = pos.currentPrice * 1.015;
+        if (!pos.trailingStopPrice || potentialTrailing < pos.trailingStopPrice) {
+          pos.trailingStopPrice = Number(potentialTrailing.toFixed(decimals));
+        }
+      }
+    }
+
+    globalStorageManager.updateState({
+      positions: Array.from(this.openPositions.values()),
+      tradeHistory: this.tradeHistory.slice(0, 500)
+    }, true);
+
+    globalSlackNotifier.notifyTradeExit(trade).catch(() => {});
+    globalDiscordNotifier.notifyTradeExit(trade).catch(() => {});
+    return trade;
   }
 
   closePosition(positionId: string, exitPrice: number, reason: TradeRecord['exitReason']): TradeRecord | null {

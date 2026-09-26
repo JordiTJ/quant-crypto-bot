@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { globalExchangeManager } from './src/exchange/ExchangeManager';
+import { PhemexAdapter } from './src/exchange/PhemexAdapter';
 import { globalRiskEngine } from './src/risk/riskEngine';
 import { SignalEngine } from './src/strategy/signalEngine';
 import { MarketDataEngine } from './src/data/marketData';
@@ -103,6 +104,13 @@ const initialTrades: TradeRecord[] = [];
 globalExchangeManager.setInitialPositions(initialPositions);
 globalExchangeManager.setInitialTrades(initialTrades);
 
+// Bootstrap cached dynamic market prices from persistent storage
+const savedPrices = globalStorageManager.getState().lastKnownPrices;
+if (savedPrices && Object.keys(savedPrices).length > 0) {
+  PhemexAdapter.setDynamicPrices(savedPrices);
+  MarketDataEngine.setInitialPrices(savedPrices);
+}
+
 // --- API ROUTES ---
 
 // 1. Bot & Exchange Status
@@ -164,9 +172,15 @@ app.get('/api/markets', async (req, res) => {
     const markets = await adapter.fetchTopMarkets();
 
     // Cache live prices in MarketDataEngine so all engines share identical real market prices
+    const priceMap: Record<string, number> = {};
     for (const m of markets) {
-      MarketDataEngine.setLivePrice(m.symbol, m.price);
+      if (m.price && m.price > 0) {
+        priceMap[m.symbol] = m.price;
+        MarketDataEngine.setLivePrice(m.symbol, m.price);
+      }
     }
+    PhemexAdapter.setDynamicPrices(priceMap);
+    globalStorageManager.updateState({ lastKnownPrices: priceMap });
 
     res.json({ 
       markets, 
@@ -189,6 +203,9 @@ app.get('/api/candles', async (req, res) => {
     const limit = Math.min(300, Number(req.query.limit) || 120);
     const adapter = globalExchangeManager.getActiveAdapter();
     const candles = await adapter.fetchKlines(symbol, timeframe, limit);
+    if (candles && candles.length > 0) {
+      MarketDataEngine.setKlines(symbol, timeframe, candles);
+    }
     res.json({ symbol, timeframe, candles });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -647,8 +664,12 @@ async function runAutonomousBackgroundEngine() {
     const markets = await adapter.fetchTopMarkets();
 
     const priceMap = new Map<string, number>();
+    const priceRecord: Record<string, number> = {};
     for (const m of markets) {
       priceMap.set(m.symbol, m.price);
+      if (m.price && m.price > 0) {
+        priceRecord[m.symbol] = m.price;
+      }
       MarketDataEngine.setLivePrice(m.symbol, m.price);
       MarketDataEngine.setMarketStats(m.symbol, {
         price: m.price,
@@ -661,12 +682,21 @@ async function runAutonomousBackgroundEngine() {
         regime: m.regime
       });
     }
+    PhemexAdapter.setDynamicPrices(priceRecord);
+    globalStorageManager.updateState({ lastKnownPrices: priceRecord });
 
     // 1. 24/7 Position Monitoring & Safety Exits (Stop Loss, Trailing Stop, TP Targets)
     const closedTrades = globalExchangeManager.updatePositionsWithLivePrices(markets);
     for (const ct of closedTrades) {
       globalRiskEngine.recordTradeResult(ct.netPnl);
-      addLog('TRADE', 'EXCHANGE', `[24/7 ACHTERGROND EXIT] ${ct.symbol} bereikte ${ct.exitReason} @ $${ct.exitPrice}. Netto P&L: $${ct.netPnl} (${ct.netPnlPercent}%, ${ct.returnR}R)`);
+      const isTp1 = ct.exitReason === 'TAKE_PROFIT_1';
+      const isTp2 = ct.exitReason === 'TAKE_PROFIT_2';
+      const detailMsg = isTp1 
+        ? `[24/7 ACHTERGROND EXIT] ${ct.symbol} bereikte TAKE_PROFIT_1 @ $${ct.exitPrice}! 50% winst veiliggesteld ($${ct.netPnl}), Stop Loss verplaatst naar Break-Even.`
+        : isTp2
+        ? `[24/7 ACHTERGROND EXIT] ${ct.symbol} bereikte TAKE_PROFIT_2 @ $${ct.exitPrice}! Volledige restpositie gesloten ($${ct.netPnl}, ${ct.returnR}R).`
+        : `[24/7 ACHTERGROND EXIT] ${ct.symbol} bereikte ${ct.exitReason} @ $${ct.exitPrice}. Netto P&L: $${ct.netPnl} (${ct.netPnlPercent}%, ${ct.returnR}R)`;
+      addLog('TRADE', 'EXCHANGE', detailMsg);
     }
 
     // Continuously sync actual equity state with risk engine

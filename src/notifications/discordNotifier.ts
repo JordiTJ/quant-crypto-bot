@@ -163,11 +163,26 @@ export class DiscordNotifier {
     const emoji = isWin ? '🎯' : '🛑';
     const sign = isWin ? '+' : '';
 
+    const isTp1 = trade.exitReason === 'TAKE_PROFIT_1';
+    const isTp2 = trade.exitReason === 'TAKE_PROFIT_2';
+
+    const title = isTp1
+      ? `🎯 [TP1 GERAAPT] ${trade.symbol} • 50% Winst Veiliggesteld`
+      : isTp2
+      ? `🎯 [TP2 DOEL BEREIKT] ${trade.symbol} • Volledig Gesloten`
+      : `${emoji} [TRADE EXIT] ${trade.symbol} • ${trade.exitReason}`;
+
+    const description = isTp1
+      ? `50% van de positie verzilverd op **Take Profit 1**! De overige 50% loopt door met de **Stop Loss op Break-Even** ($${trade.entryPrice.toLocaleString()}).\nRealisatie: **${sign}$${trade.netPnl.toFixed(2)} (${sign}${trade.netPnlPercent.toFixed(2)}%)**`
+      : isTp2
+      ? `Volledige restpositie gesloten op **Take Profit 2**!\nRealisatie: **${sign}$${trade.netPnl.toFixed(2)} (${sign}${trade.netPnlPercent.toFixed(2)}%)**`
+      : `Positie gesloten met ${isWin ? 'winst' : 'verlies'}: **${sign}$${trade.netPnl.toFixed(2)} (${sign}${trade.netPnlPercent.toFixed(2)}%)**`;
+
     const payload = {
       embeds: [
         {
-          title: `${emoji} [TRADE EXIT] ${trade.symbol} • ${trade.exitReason}`,
-          description: `Positie gesloten met ${isWin ? 'winst' : 'verlies'}: **${sign}$${trade.netPnl.toFixed(2)} (${sign}${trade.netPnlPercent.toFixed(2)}%)**`,
+          title,
+          description,
           color,
           fields: [
             { name: 'Entry Koers', value: `$${trade.entryPrice.toLocaleString()}`, inline: true },

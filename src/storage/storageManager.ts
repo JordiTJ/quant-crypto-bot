@@ -22,6 +22,7 @@ export interface PersistentBotData {
     pinSalt?: string;
   };
   systemLogs: SystemLog[];
+  lastKnownPrices?: Record<string, number>;
 }
 
 const DEFAULT_SLACK_CONFIG: SlackConfig = {
@@ -51,6 +52,13 @@ export class StorageManager {
   private isSaving = false;
 
   private constructor() {
+    if (typeof window !== 'undefined' || typeof process === 'undefined' || !process.cwd) {
+      this.dataDir = '';
+      this.filePath = '';
+      this.memoryCache = this.loadInitialState();
+      return;
+    }
+
     this.dataDir = path.join(process.cwd(), 'data');
     this.filePath = path.join(this.dataDir, 'bot_state.json');
 
@@ -84,11 +92,12 @@ export class StorageManager {
       slackConfig: DEFAULT_SLACK_CONFIG,
       discordConfig: DEFAULT_DISCORD_CONFIG,
       security: {},
-      systemLogs: []
+      systemLogs: [],
+      lastKnownPrices: {}
     };
 
     try {
-      if (fs.existsSync(this.filePath)) {
+      if (typeof window === 'undefined' && this.filePath && fs.existsSync(this.filePath)) {
         const raw = fs.readFileSync(this.filePath, 'utf-8');
         if (raw && raw.trim()) {
           const parsed = JSON.parse(raw);
@@ -137,6 +146,7 @@ export class StorageManager {
   }
 
   public writeToDiskSync(): void {
+    if (typeof window !== 'undefined' || !this.filePath) return;
     try {
       if (!fs.existsSync(this.dataDir)) {
         fs.mkdirSync(this.dataDir, { recursive: true });
@@ -151,6 +161,7 @@ export class StorageManager {
   }
 
   public async writeToDiskAsync(): Promise<void> {
+    if (typeof window !== 'undefined' || !this.filePath) return;
     if (this.isSaving) return;
     this.isSaving = true;
 
@@ -170,8 +181,9 @@ export class StorageManager {
   }
 
   public getStorageStatus(): StorageStatus {
+    const isPersisted = typeof window === 'undefined' && this.filePath ? fs.existsSync(this.filePath) : false;
     return {
-      persisted: fs.existsSync(this.filePath),
+      persisted: isPersisted,
       filePath: 'data/bot_state.json',
       lastSavedAt: this.memoryCache.lastSavedAt,
       openPositionsCount: this.memoryCache.positions?.length || 0,

@@ -141,6 +141,7 @@ export interface Position {
   stopLoss: number;
   takeProfit1: number;
   takeProfit2: number;
+  takeProfit1Hit?: boolean;
   trailingStopActive: boolean;
   trailingStopPrice?: number;
   unrealizedPnl: number;

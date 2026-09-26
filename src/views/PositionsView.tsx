@@ -183,11 +183,18 @@ export const PositionsView: React.FC<PositionsViewProps> = ({
                       </td>
 
                       <td className="py-3 px-4 font-mono text-[11px]">
-                        <div className="text-emerald-400">
-                          TP1: ${p.takeProfit1.toLocaleString(undefined, {
-                            minimumFractionDigits: p.takeProfit1 > 10 ? 2 : p.takeProfit1 > 0.01 ? 4 : 8,
-                            maximumFractionDigits: p.takeProfit1 > 10 ? 2 : p.takeProfit1 > 0.01 ? 4 : 8
-                          })}
+                        <div className="flex items-center gap-1.5">
+                          <span className={p.takeProfit1Hit ? "text-slate-400 line-through" : "text-emerald-400 font-semibold"}>
+                            TP1: ${p.takeProfit1.toLocaleString(undefined, {
+                              minimumFractionDigits: p.takeProfit1 > 10 ? 2 : p.takeProfit1 > 0.01 ? 4 : 8,
+                              maximumFractionDigits: p.takeProfit1 > 10 ? 2 : p.takeProfit1 > 0.01 ? 4 : 8
+                            })}
+                          </span>
+                          {p.takeProfit1Hit && (
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              ✓ 50% Hit (SL @ BE)
+                            </span>
+                          )}
                         </div>
                         <div className="text-cyan-400">
                           TP2: ${p.takeProfit2.toLocaleString(undefined, {
